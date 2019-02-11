@@ -161,8 +161,8 @@ exports.getLocalSources = function(req, callback) {
     var term = req.query.term;
 
     search({
-        from: 0,
-        size: 10000,
+        // from: 0,
+        // size: 10000,
         index: 'mms_vocabs_local_image_sources',
         body: {
             'query': {
@@ -193,12 +193,25 @@ exports.getLocalSources = function(req, callback) {
             results['id'] = data[i]._source.imageSourceID;
             results['label'] = data[i]._source.term;
             dataArr.push(results);
+            results = {};
         }
 
         callback(dataArr);
     });
 
     return false;
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ */
+exports.saveLocalSources = function (req, callback) {
+
+    console.log(req.body);
+
+
 };
 
 /**

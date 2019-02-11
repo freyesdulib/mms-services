@@ -22,8 +22,13 @@ exports.getArtTypes = function (req, res) {
 
 exports.getLocalSources = function (req, res) {
     Local.getLocalSources(req, function (data) {
-        console.log(data);
         res.status(200).send(data);
+    });
+};
+
+exports.saveLocalSources = function (req, res) {
+    Local.saveLocalSources(req, function (data) {
+        res.status(201).send(data);
     });
 };
 

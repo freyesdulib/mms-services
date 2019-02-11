@@ -22,6 +22,9 @@ module.exports = function (app) {
     app.route('/api/v3/vocabs/local/sources')
         .get(Local.getLocalSources);
 
+    app.route('/api/v3/vocabs/local/sources/save')
+        .post(Local.saveLocalSources);
+
     app.route('/api/v3/vocabs/index')
         .post(Local.indexVocabs);
 
