@@ -161,8 +161,8 @@ exports.getLocalSources = function(req, callback) {
     var term = req.query.term;
 
     search({
-        // from: 0,
-        // size: 10000,
+        from: 0,
+        size: 10,
         index: 'mms_vocabs_local_image_sources',
         body: {
             'query': {

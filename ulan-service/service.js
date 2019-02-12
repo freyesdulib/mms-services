@@ -25,7 +25,7 @@ exports.getUlanCreatorsWS = function (req, callback) {
     var options = {};
     var query = 'ULANService.asmx/ULANGetTermMatch?name=' + term + '&roleid=&nationid=';
     options.uri = host + query;
-    options.timeout = 10000;
+    options.timeout = 35000;
 
     request.get(options, function (err, response, xml) {
 
@@ -58,7 +58,7 @@ exports.getUlanCreatorsWS = function (req, callback) {
         } else {
 
             callback({
-                status: 400,
+                status: 200,
                 data: []
             });
 
@@ -84,7 +84,7 @@ exports.getUlanCreatorWS = function (req, callback) {
     var options = {};
     var query = 'ULANService.asmx/ULANGetSubject?subjectID=' + id;
     options.uri = host + query;
-    options.timeout = 10000;
+    options.timeout = 35000;
 
     request.get(options, function (err, response, xml) {
 
@@ -193,7 +193,7 @@ exports.getUlanCreatorWS = function (req, callback) {
         } else {
 
             callback({
-                status: 400,
+                status: 200,
                 data: []
             });
 
