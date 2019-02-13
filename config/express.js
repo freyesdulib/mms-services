@@ -34,10 +34,10 @@ module.exports = function () {
     app.use(methodOverride());
     app.use(helmet());
 
-    require('../ulan-service/routes')(app);
-    require('../aat-service/routes')(app);
-    require('../lc-service/routes')(app);
-    require('../local-service/routes')(app);
+    require('../service-ulan/routes')(app);
+    require('../service-aat/routes')(app);
+    require('../service-lc/routes')(app);
+    require('../service-local/routes')(app);
 
     return server;
 };

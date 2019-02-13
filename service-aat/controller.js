@@ -1,6 +1,6 @@
 'use strict';
 
-var Aat = require('../aat-service/service');
+var Aat = require('../service-aat/service');
 
 exports.getAatSubjects = function (req, res) {
     Aat.getAatSubjects(req, function (data) {

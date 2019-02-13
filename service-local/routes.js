@@ -1,6 +1,6 @@
 'use strict';
 
-var Local = require('../local-service/controller');
+var Local = require('../service-local/controller');
 
 module.exports = function (app) {
 

@@ -1,6 +1,6 @@
 'use strict';
 
-var Lc = require('../lc-service/controller');
+var Lc = require('../service-lc/controller');
 
 module.exports = function (app) {
 

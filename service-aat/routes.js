@@ -1,6 +1,6 @@
 'use strict';
 
-var Aat = require('../aat-service/controller');
+var Aat = require('../service-aat/controller');
 
 module.exports = function (app) {
 

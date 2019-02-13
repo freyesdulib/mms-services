@@ -1,6 +1,6 @@
 'use strict';
 
-var Lc = require('../lc-service/service');
+var Lc = require('../service-lc/service');
 
 exports.getLcTerms = function (req, res) {
     Lc.getLcTerms(req, function (data) {

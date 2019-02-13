@@ -1,6 +1,6 @@
 'use strict';
 
-var Ulan = require('../ulan-service/controller');
+var Ulan = require('../service-ulan/controller');
 
 module.exports = function (app) {
 

@@ -2,8 +2,8 @@ var config = require('../config/config.js'),
     es = require('elasticsearch'),
     validator = require('validator'),
     client = new es.Client({
-        host: config.elasticSearch,
-        log: 'trace'
+        host: config.elasticSearch
+        // log: 'trace'
     }),
     knex = require('knex')({
         client: 'mysql2',

@@ -1,6 +1,6 @@
 'use strict';
 
-var Ulan = require('../ulan-service/service');
+var Ulan = require('../service-ulan/service');
 
 exports.getUlanCreatorsWS = function (req, res) {
     Ulan.getUlanCreatorsWS(req, function (data) {

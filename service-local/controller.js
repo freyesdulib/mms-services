@@ -1,6 +1,6 @@
 'use strict';
 
-var Local = require('../local-service/service');
+var Local = require('../service-local/service');
 
 exports.getServiceInfo = function (req, res) {
     Local.getServiceInfo(req, function (data) {
