@@ -16,6 +16,79 @@ var config = require('../config/config.js'),
 
 /**
  *
+ * @param req
+ * @param callback
+ */
+exports.indexVocabRecord = function (req, callback) {
+
+    console.log('req body: ', req.body.id);
+    callback({
+        status: 201,
+        data: 'Vocab term indexed'
+    });
+};
+
+/**
+ * Indexes all records
+ * @param req
+ * @param callback
+ */
+exports.indexVocabs = function (req, callback) {
+
+    if (req.body.data === undefined) {
+
+        callback({
+            status: 400,
+            data: 'Bad request.'
+        });
+    }
+
+    var table = req.body.data;
+
+    knex('local_' + table)
+        .select('*')
+        .then(function (data) {
+
+            var timer = setInterval(function () {
+
+                if (data.length === 0) {
+                    console.log(table + ' indexed.');
+                    clearInterval(timer);
+                    return false;
+                }
+
+                var record = data.pop();
+
+                // TODO: make use pk as es id
+                client.index({
+                    index: 'mms_vocabs_local_' + table,
+                    type: 'data',
+                    body: record
+                }, function (error, response) {
+
+                    if (error) {
+                        console.log(error);
+                        throw error;
+                    }
+
+                    console.log(response);
+                });
+
+            }, 100);
+        })
+        .catch(function (error) {
+            console.log(error);
+            throw error;
+        });
+
+    callback({
+        status: 200,
+        data: 'Indexing ' + table + '...'
+    });
+};
+
+/**
+ *
  * @param pid
  */
 exports.realTimeIndex = function (pid) {
@@ -51,6 +124,11 @@ exports.realTimeIndex = function (pid) {
     });
 };
 
+/**
+ *
+ * @param req
+ * @param callback
+ */
 exports.fullIndex = function (req, callback) {
 
     var collection = req.body.collection;
@@ -117,7 +195,7 @@ exports.fullIndex = function (req, callback) {
     }
 
     /**
-     *
+     * @param collection_id
      */
     index(collection_id, function (data) {
 
@@ -194,3 +272,153 @@ function createDocument(pid, json) {
         console.log(response);
     });
 }
+
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
+exports.deleteIndex = function(req, callback) {
+
+    if (req.body.index === undefined) {
+
+        callback({
+            status: 400,
+            message: 'Bad request'
+        });
+
+        return false;
+    }
+
+    var index = req.body.index;
+
+    client.indices.delete({
+        index: 'mms_vocabs_local_' + index
+    }).then(function (result) {
+
+        if (result.acknowledged === true) {
+
+            callback({
+                status: 201,
+                message: 'Index deleted'
+            });
+
+        } else {
+
+            callback({
+                status: 201,
+                message: 'Index not deleted'
+            });
+        }
+    });
+
+    return false;
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
+exports.createIndex = function(req, callback) {
+
+    if (req.body.index === undefined) {
+
+        callback({
+            status: 400,
+            message: 'Bad request'
+        });
+
+        return false;
+    }
+
+    var index = req.body.index;
+
+    client.indices.create({
+        index: 'mms_vocabs_local_' + index,
+        body: {
+            'settings': {
+                'number_of_shards': 3,
+                'number_of_replicas': 2
+            }
+        }
+    }).then(function (result) {
+
+        if (result.acknowledged === true) {
+
+            callback({
+                status: 201,
+                message: 'Index created'
+            });
+
+        } else {
+
+            callback({
+                status: 201,
+                message: 'Index not created'
+            });
+        }
+
+    });
+
+    return false;
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
+exports.createMapping = function(req, callback) {
+
+    if (req.body.index === undefined) {
+
+        callback({
+            status: 400,
+            message: 'Bad request'
+        });
+
+        return false;
+    }
+
+    var index = req.body.index;
+
+    if (index === 'image_sources') {
+        var mappingObj = {
+            'imageSourceID': {type: 'integer'},
+            'term': {type: 'string'}
+        };
+    }
+
+    var body = {
+        properties: mappingObj
+    };
+
+    client.indices.putMapping({
+        index: 'mms_vocabs_local_' + index,
+        type: 'data',
+        body: body
+    }).then(function (result) {
+
+        if (result.acknowledged === true) {
+
+            callback({
+                status: 201,
+                message: 'Mapping created'
+            });
+
+        } else {
+
+            callback({
+                status: 201,
+                message: 'Mapping not created'
+            });
+        }
+
+    });
+
+    return false;
+};

@@ -43,27 +43,3 @@ exports.getInstructors = function (req, res) {
         res.status(data.status).send(data.data);
     });
 };
-
-exports.indexVocabs = function (req, res) {
-    Local.indexVocabs(req, function (data) {
-        res.status(data.status).send(data.data);
-    });
-};
-
-exports.deleteIndex = function (req, res) {
-    Local.deleteIndex(req, function (data) {
-        res.status(data.status).send(data.data);
-    });
-};
-
-exports.createIndex = function (req, res) {
-    Local.createIndex(req, function (data) {
-        res.status(data.status).send(data.data);
-    });
-};
-
-exports.createMapping = function (req, res) {
-    Local.createMapping(req, function (data) {
-        res.status(data.status).send(data.data);
-    });
-};

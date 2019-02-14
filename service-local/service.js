@@ -1,6 +1,7 @@
 var config = require('../config/config.js'),
     es = require('elasticsearch'),
     validator = require('validator'),
+    request = require('request'),
     client = new es.Client({
         host: config.elasticSearch
         // log: 'trace'
@@ -28,74 +29,6 @@ exports.getServiceInfo = function (req, callback) {
             description: 'Controlled Vocabularies Service for MMS Art History application',
             version: 'v3.0'
         }
-    });
-};
-
-/**
- *
- * @param req
- * @param callback
- */
-exports.indexVocabs = function (req, callback) {
-
-    if (req.body.data === undefined) {
-
-        callback({
-            status: 400,
-            data: 'Bad request.'
-        });
-    }
-
-    var table = req.body.data;
-
-    knex('local_' + table)
-        .select('*')
-        .then(function (data) {
-
-            var timer = setInterval(function () {
-
-                if (data.length === 0) {
-                    console.log(table + ' indexed.');
-                    clearInterval(timer);
-                    return false;
-                }
-
-                var record = data.pop();
-
-                /*
-                if (table === 'image_sources') {
-
-                    record.suggest = {
-                        input: record.term.split(''),
-                        ouptut: record.term
-                    }
-                }
-                */
-
-                client.index({
-                    index: 'mms_vocabs_local_' + table,
-                    type: 'data',
-                    body: record
-                }, function (error, response) {
-
-                    if (error) {
-                        console.log(error);
-                        throw error;
-                    }
-
-                    console.log(response);
-                });
-
-            }, 100);
-        })
-        .catch(function (error) {
-            console.log(error);
-            throw error;
-        });
-
-    callback({
-        status: 200,
-        data: 'Indexing ' + table + '...'
     });
 };
 
@@ -209,9 +142,96 @@ exports.getLocalSources = function(req, callback) {
  */
 exports.saveLocalSources = function (req, callback) {
 
-    console.log(req.body);
+    var action = req.body.action,
+        term = req.body.term;
+
+    if (action === 'saveimagesource') {
+
+        knex('local_image_sources')
+            .insert({
+                term: term
+            })
+            .then(function (data) {
+
+                var id = data[0];
+
+                request.post({
+                    url: 'http://localhost:3004/api/v3/vocabs/index/record',
+                    form: {
+                        'id': id
+                    }
+                }, function (error, httpResponse, body) {
+
+                    if (error) {
+                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        callback('Not Created');
+                        throw 'ERROR: unable to index record';
+                    }
+
+                    if (httpResponse.statusCode === 201) {
+                        // logger.module().info('INFO: record indexed');
+                        callback('Created');
+                        return false;
+                    } else {
+                        // logger.module().fatal('FATAL: unable to index record');
+                        callback('Not Created');
+                        throw 'FATAL: unable to index record';
+                    }
+                });
+            })
+            .catch(function (error) {
+                // logger.module().error('ERROR: unable to save local source (saveLocalSources) ' + error);
+                throw 'ERROR: unable to save local source (saveLocalSources) ' + error;
+            });
+    }
+
+    if (action === 'updateimagesource') {
+
+        var id = req.body.id[0];
+
+        knex('local_image_sources')
+            .where({
+                imageSourceID: id
+            })
+            .update({
+                term: term
+            })
+            .then(function (data) {
+
+                console.log(data);
+
+                request.post({
+                    url: 'http://localhost:3004/api/v3/vocabs/index/record',
+                    form: {
+                        'id': id
+                    }
+                }, function (error, httpResponse, body) {
+
+                    if (error) {
+                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        callback('Not Created');
+                        throw 'ERROR: unable to index record';
+                    }
+
+                    if (httpResponse.statusCode === 201) {
+                        // logger.module().info('INFO: record indexed');
+                        callback('Created');
+                        return false;
+                    } else {
+                        // logger.module().fatal('FATAL: unable to index record');
+                        callback('Not Created');
+                        throw 'FATAL: unable to index record';
+                    }
+                });
 
 
+            })
+            .catch(function (error) {
+                // TODO: log
+                console.log(error);
+                throw error;
+            });
+    }
 };
 
 /**
@@ -315,136 +335,4 @@ var search = function (obj, callback) {
             message: 'Error'
         });
     });
-};
-
-exports.deleteIndex = function(req, callback) {
-
-    if (req.body.index === undefined) {
-
-        callback({
-            status: 400,
-            message: 'Bad request'
-        });
-
-        return false;
-    }
-
-    var index = req.body.index;
-
-    client.indices.delete({
-        index: 'mms_vocabs_local_' + index
-    }).then(function (result) {
-
-        if (result.acknowledged === true) {
-
-            callback({
-                status: 201,
-                message: 'Index deleted'
-            });
-
-        } else {
-
-            callback({
-                status: 201,
-                message: 'Index not deleted'
-            });
-        }
-    });
-
-    return false;
-};
-
-exports.createIndex = function(req, callback) {
-
-    if (req.body.index === undefined) {
-
-        callback({
-            status: 400,
-            message: 'Bad request'
-        });
-
-        return false;
-    }
-
-    var index = req.body.index;
-
-    client.indices.create({
-        index: 'mms_vocabs_local_' + index,
-        body: {
-            'settings': {
-                'number_of_shards': 3,
-                'number_of_replicas': 2
-            }
-        }
-    }).then(function (result) {
-
-        if (result.acknowledged === true) {
-
-            callback({
-                status: 201,
-                message: 'Index created'
-            });
-
-        } else {
-
-            callback({
-                status: 201,
-                message: 'Index not created'
-            });
-        }
-
-    });
-
-    return false;
-};
-
-exports.createMapping = function(req, callback) {
-
-    if (req.body.index === undefined) {
-
-        callback({
-            status: 400,
-            message: 'Bad request'
-        });
-
-        return false;
-    }
-
-    var index = req.body.index;
-
-    if (index === 'image_sources') {
-        var mappingObj = {
-            'imageSourceID': {type: 'integer'},
-            'term': {type: 'string'}
-        };
-    }
-
-    var body = {
-        properties: mappingObj
-    };
-
-    client.indices.putMapping({
-        index: 'mms_vocabs_local_' + index,
-        type: 'data',
-        body: body
-    }).then(function (result) {
-
-        if (result.acknowledged === true) {
-
-            callback({
-                status: 201,
-                message: 'Mapping created'
-            });
-
-        } else {
-
-            callback({
-                status: 201,
-                message: 'Mapping not created'
-            });
-        }
-
-    });
-
-    return false;
 };

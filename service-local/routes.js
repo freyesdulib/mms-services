@@ -24,16 +24,4 @@ module.exports = function (app) {
 
     app.route('/api/v3/vocabs/local/sources/save')
         .post(Local.saveLocalSources);
-
-    app.route('/api/v3/vocabs/index')
-        .post(Local.indexVocabs);
-
-    app.route('/api/v3/vocabs/index/delete')
-        .post(Local.deleteIndex);
-
-    app.route('/api/v3/vocabs/index/create')
-        .post(Local.createIndex);
-
-    app.route('/api/v3/vocabs/mapping/create')
-        .post(Local.createMapping);
 };

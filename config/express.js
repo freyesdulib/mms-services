@@ -38,6 +38,7 @@ module.exports = function () {
     require('../service-aat/routes')(app);
     require('../service-lc/routes')(app);
     require('../service-local/routes')(app);
+    require('../service-indexer/routes')(app);
 
     return server;
 };
