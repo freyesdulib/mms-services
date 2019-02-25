@@ -21,7 +21,8 @@ var config = require('../config/config.js'),
  */
 exports.indexVocabRecord = function (req, callback) {
 
-    console.log('req body: ', req.body.id);
+    console.log('indexer req body: ', req.body.id);
+
     callback({
         status: 201,
         data: 'Vocab term indexed'
@@ -59,7 +60,8 @@ exports.indexVocabs = function (req, callback) {
 
                 var record = data.pop();
 
-                // TODO: make use pk as es id
+                // TODO: make use pk as es id  switch statement
+
                 client.index({
                     index: 'mms_vocabs_local_' + table,
                     type: 'data',

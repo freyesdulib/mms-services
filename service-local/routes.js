@@ -24,4 +24,10 @@ module.exports = function (app) {
 
     app.route('/api/v3/vocabs/local/sources/save')
         .post(Local.saveLocalSources);
+
+    app.route('/api/v3/vocabs/local/creators/save')
+        .post(Local.saveLocalCreators);
+
+    app.route('/api/v3/vocabs/local/instructors/save')
+        .post(Local.saveLocalInstructors);
 };

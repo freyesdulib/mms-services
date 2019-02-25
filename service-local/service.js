@@ -38,7 +38,7 @@ exports.getServiceInfo = function (req, callback) {
  * @param callback
  * @returns {boolean}
  */
-exports.getLocalCreators = function(req, callback) {
+exports.getLocalCreators = function (req, callback) {
 
     var term = validator.trim(req.query.term);
 
@@ -66,7 +66,8 @@ exports.getLocalCreators = function(req, callback) {
                     ],
                     'type': 'best_fields'
                 }
-            }}
+            }
+        }
     }, function (response) {
         callback(response);
     });
@@ -80,7 +81,7 @@ exports.getLocalCreators = function(req, callback) {
  * @param callback
  * @returns {boolean}
  */
-exports.getLocalSources = function(req, callback) {
+exports.getLocalSources = function (req, callback) {
 
     if (req.query.term === undefined) {
         callback({
@@ -100,16 +101,16 @@ exports.getLocalSources = function(req, callback) {
         body: {
             'query': {
                 'bool': {
-                   'must': [
-                       {
-                           'match_phrase_prefix': {
-                               'term': {
-                                   'query': term,
-                                   'max_expansions': 40
-                               }
-                           }
-                       }
-                   ]
+                    'must': [
+                        {
+                            'match_phrase_prefix': {
+                                'term': {
+                                    'query': term,
+                                    'max_expansions': 40
+                                }
+                            }
+                        }
+                    ]
                 }
             }
         }
@@ -120,7 +121,7 @@ exports.getLocalSources = function(req, callback) {
             dataArr = [],
             data = response.data;
 
-        for (var i=0;i<data.length;i++) {
+        for (var i = 0; i < data.length; i++) {
             results['imageSourceID'] = data[i]._source.imageSourceID;
             results['term'] = data[i]._source.term;
             results['id'] = data[i]._source.imageSourceID;
@@ -156,7 +157,7 @@ exports.saveLocalSources = function (req, callback) {
                 var id = data[0];
 
                 request.post({
-                    url: 'http://localhost:3004/api/v3/vocabs/index/record',
+                    url: config.mmsServices + 'vocabs/index/record',
                     form: {
                         'id': id
                     }
@@ -198,10 +199,8 @@ exports.saveLocalSources = function (req, callback) {
             })
             .then(function (data) {
 
-                console.log(data);
-
                 request.post({
-                    url: 'http://localhost:3004/api/v3/vocabs/index/record',
+                    url: config.mmsServices + 'vocabs/index/record',
                     form: {
                         'id': id
                     }
@@ -238,17 +237,226 @@ exports.saveLocalSources = function (req, callback) {
  *
  * @param req
  * @param callback
+ */
+exports.saveLocalCreators = function (req, callback) {
+
+    var action = req.body.action,
+        record = req.body;
+
+    if (action === 'savelocalcreator') {
+
+        delete record['action'];
+
+        var obj = {};
+        obj.preferred_terms_term_text = record['creator'];
+        obj.non_preferred_terms_term_text = record['creator.alternative'];
+        obj.nationalities = record['description.nationality'];
+        obj.role_id = record['description.role'];
+        obj.preferred_biographies_biography_text = record['description.creatorbio'];
+        obj.preferred_biographies_sex = record['sex'];
+        obj.preferred_terms_source_id = record['source'];
+        obj.preferred_biographies_birth_date = record['earliestdates'];
+        obj.preferred_biographies_death_date = record['latestdates'];
+
+        knex('local_creators')
+            .insert(obj)
+            .then(function (data) {
+
+                var id = data[0];
+
+                request.post({
+                    url: config.mmsServices + 'vocabs/index/record',
+                    form: {
+                        'id': id
+                    }
+                }, function (error, httpResponse, body) {
+
+                    if (error) {
+                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        callback('Not Created');
+                        throw 'ERROR: unable to index record';
+                    }
+
+                    if (httpResponse.statusCode === 201) {
+                        // logger.module().info('INFO: record indexed');
+                        callback('Created');
+                        return false;
+                    } else {
+                        // logger.module().fatal('FATAL: unable to index record');
+                        callback('Not Created');
+                        throw 'FATAL: unable to index record';
+                    }
+                });
+            })
+            .catch(function (error) {
+                // logger.module().error('ERROR: unable to save local source (saveLocalSources) ' + error);
+                throw 'ERROR: unable to save local source (saveLocalSources) ' + error;
+            });
+    }
+
+    if (action === 'updatelocalcreator') {
+
+        var id = req.body.id[0],
+            term = req.body.term;
+
+        knex('local_instructors')
+            .where({
+                instructorID: id
+            })
+            .update({
+                term: term
+            })
+            .then(function (data) {
+
+                request.post({
+                    url: config.mmsServices + 'vocabs/index/record',
+                    form: {
+                        'id': id
+                    }
+                }, function (error, httpResponse, body) {
+
+                    if (error) {
+                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        callback('Not Created');
+                        throw 'ERROR: unable to index record';
+                    }
+
+                    if (httpResponse.statusCode === 201) {
+                        // logger.module().info('INFO: record indexed');
+                        callback('Created');
+                        return false;
+                    } else {
+                        // logger.module().fatal('FATAL: unable to index record');
+                        callback('Not Created');
+                        throw 'FATAL: unable to index record';
+                    }
+                });
+
+
+            })
+            .catch(function (error) {
+                // TODO: log
+                console.log(error);
+                throw error;
+            });
+    }
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ */
+exports.saveLocalInstructors = function (req, callback) {
+
+    var action = req.body.action,
+        record = req.body;
+
+    if (action === 'saveinstructor') {
+
+        delete record['action'];
+
+        knex('local_instructors')
+            .insert(record)
+            .then(function (data) {
+
+                var id = data[0];
+
+                request.post({
+                    url: config.mmsServices + 'vocabs/index/record',
+                    form: {
+                        'id': id
+                    }
+                }, function (error, httpResponse, body) {
+
+                    if (error) {
+                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        callback('Not Created');
+                        throw 'ERROR: unable to index record';
+                    }
+
+                    if (httpResponse.statusCode === 201) {
+                        // logger.module().info('INFO: record indexed');
+                        callback('Created');
+                        return false;
+                    } else {
+                        // logger.module().fatal('FATAL: unable to index record');
+                        callback('Not Created');
+                        throw 'FATAL: unable to index record';
+                    }
+                });
+            })
+            .catch(function (error) {
+                // logger.module().error('ERROR: unable to save local source (saveLocalSources) ' + error);
+                throw 'ERROR: unable to save local source (saveLocalSources) ' + error;
+            });
+    }
+
+    if (action === 'updateinstructor') {
+
+        var id = req.body.id[0],
+            term = req.body.term;
+
+        console.log(id);
+        console.log(action);
+        console.log(record);
+
+        knex('local_instructors')
+            .where({
+                instructorID: id
+            })
+            .update({
+                term: term
+            })
+            .then(function (data) {
+
+                request.post({
+                    url: config.mmsServices + 'vocabs/index/record',
+                    form: {
+                        'id': id
+                    }
+                }, function (error, httpResponse, body) {
+
+                    if (error) {
+                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        callback('Not Created');
+                        throw 'ERROR: unable to index record';
+                    }
+
+                    if (httpResponse.statusCode === 201) {
+                        // logger.module().info('INFO: record indexed');
+                        callback('Created');
+                        return false;
+                    } else {
+                        // logger.module().fatal('FATAL: unable to index record');
+                        callback('Not Created');
+                        throw 'FATAL: unable to index record';
+                    }
+                });
+            })
+            .catch(function (error) {
+                // TODO: log
+                console.log(error);
+                throw error;
+            });
+    }
+};
+
+/**
+ *
+ * @param req
+ * @param callback
  * @returns {boolean}
  */
-exports.getArtTypes = function(req, callback) {
+exports.getArtTypes = function (req, callback) {
 
     search({
         from: 0,
         size: 10000,
         index: 'mms_vocabs_local_art_types',
         body: {
-            'query' : {
-                'match_all' : {}
+            'query': {
+                'match_all': {}
             }
         },
         'sort': ['term']
@@ -266,15 +474,15 @@ exports.getArtTypes = function(req, callback) {
  * @param callback
  * @returns {boolean}
  */
-exports.getTimePeriods = function(req, callback) {
+exports.getTimePeriods = function (req, callback) {
 
     search({
         from: 0,
         size: 10000,
         index: 'mms_vocabs_local_timeperiods',
         body: {
-            'query' : {
-                'match_all' : {}
+            'query': {
+                'match_all': {}
             }
         },
         'sort': ['term']
@@ -292,15 +500,15 @@ exports.getTimePeriods = function(req, callback) {
  * @param callback
  * @returns {boolean}
  */
-exports.getInstructors = function(req, callback) {
+exports.getInstructors = function (req, callback) {
 
     search({
         from: 0,
         size: 10000,
         index: 'mms_vocabs_local_instructors',
         body: {
-            'query' : {
-                'match_all' : {}
+            'query': {
+                'match_all': {}
             }
         },
         'sort': ['term']
@@ -331,7 +539,7 @@ var search = function (obj, callback) {
         console.log(error);
         callback({
             status: 500,
-            data:[],
+            data: [],
             message: 'Error'
         });
     });

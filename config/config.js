@@ -8,6 +8,7 @@ module.exports = {
     dbNameVocab: process.env.DB_NAME_VOCAB,
     dbNameStats: process.env.DB_NAME_STATS,
     elasticSearch: process.env.ELASTIC_SEARCH,
+    mmsServices: process.env.MMS_SERVICES,
     gettyApiUlanHost: process.env.GETTY_API_ULAN_HOST,
     gettyApiAatHost: process.env.GETTY_API_AAT_HOST,
     gettyApiUsername: process.env.GETTY_API_USERNAME,

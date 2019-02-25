@@ -32,6 +32,18 @@ exports.saveLocalSources = function (req, res) {
     });
 };
 
+exports.saveLocalCreators = function (req, res) {
+    Local.saveLocalCreators(req, function (data) {
+        res.status(201).send(data);
+    });
+};
+
+exports.saveLocalInstructors = function (req, res) {
+    Local.saveLocalInstructors(req, function (data) {
+        res.status(201).send(data);
+    });
+};
+
 exports.getTimePeriods = function (req, res) {
     Local.getTimePeriods(req, function (data) {
         res.status(data.status).send(data.data);
