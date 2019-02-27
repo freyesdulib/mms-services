@@ -81,6 +81,45 @@ exports.getLocalCreators = function (req, callback) {
  * @param callback
  * @returns {boolean}
  */
+exports.getLocalCreatorsById = function (req, callback) {
+
+    var id = validator.trim(req.query.id);
+
+    if (id === undefined) {
+
+        callback({
+            status: 400,
+            data: 'Bad request.'
+        });
+
+        return false;
+    }
+
+    search({
+        from: 0,
+        size: 1,
+        index: 'mms_vocabs_local_creators',
+        body: {
+            'query': {
+                'match_phrase': {
+                    'id': id
+                }
+            }
+        }
+
+    }, function (response) {
+        callback(response);
+    });
+
+    return false;
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
 exports.getLocalSources = function (req, callback) {
 
     if (req.query.term === undefined) {
@@ -396,10 +435,6 @@ exports.saveLocalInstructors = function (req, callback) {
 
         var id = req.body.id[0],
             term = req.body.term;
-
-        console.log(id);
-        console.log(action);
-        console.log(record);
 
         knex('local_instructors')
             .where({
