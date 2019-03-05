@@ -21,7 +21,49 @@ var config = require('../config/config.js'),
  */
 exports.indexVocabRecord = function (req, callback) {
 
-    console.log('indexer req body: ', req.body.id);
+    var doc = req.body.obj,
+        type = req.body.type,
+        obj = {};
+
+    if (doc._id !== undefined) {
+
+        //update
+        obj.id = doc._id;
+        delete doc._id;
+
+        obj.index = 'mms_vocabs_local_' + type;
+        obj.type = 'data';
+        obj.body = {
+            doc: doc
+        };
+
+        client.update(obj, function (error, response) {
+
+            if (error) {
+                console.log(error);
+                throw error;
+            }
+
+            console.log(response);
+        });
+
+    } else {
+
+        //create
+        obj.index = 'mms_vocabs_local_' + type;
+        obj.type = 'data';
+        obj.body = doc;
+
+        client.index(obj, function (error, response) {
+
+            if (error) {
+                console.log(error);
+                throw error;
+            }
+
+            console.log(response);
+        });
+    }
 
     callback({
         status: 201,
@@ -30,7 +72,7 @@ exports.indexVocabRecord = function (req, callback) {
 };
 
 /**
- * Indexes all records
+ * Indexes all vocabulary records
  * @param req
  * @param callback
  */

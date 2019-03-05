@@ -161,8 +161,9 @@ exports.getLocalSources = function (req, callback) {
             data = response.data;
 
         for (var i = 0; i < data.length; i++) {
-            results['imageSourceID'] = data[i]._source.imageSourceID;
-            results['term'] = data[i]._source.term;
+            results['_id'] = data[i]._id;
+            // results['imageSourceID'] = data[i]._source.imageSourceID;
+            // results['term'] = data[i]._source.term;
             results['id'] = data[i]._source.imageSourceID;
             results['label'] = data[i]._source.term;
             dataArr.push(results);
@@ -187,18 +188,20 @@ exports.saveLocalSources = function (req, callback) {
 
     if (action === 'saveimagesource') {
 
+        var obj = {};
+        obj.term = term;
+
         knex('local_image_sources')
-            .insert({
-                term: term
-            })
+            .insert(obj)
             .then(function (data) {
 
-                var id = data[0];
+                obj.imageSourceID = data[0];
 
                 request.post({
                     url: config.mmsServices + 'vocabs/index/record',
                     form: {
-                        'id': id
+                        'obj': obj,
+                        'type': 'image_sources'
                     }
                 }, function (error, httpResponse, body) {
 
@@ -227,21 +230,27 @@ exports.saveLocalSources = function (req, callback) {
 
     if (action === 'updateimagesource') {
 
-        var id = req.body.id[0];
+        var id = req.body.id[0],
+            _id = req.body._id[0];
+
+        var obj = {};
+        obj.imageSourceID = id;
+        obj.term = term;
 
         knex('local_image_sources')
             .where({
                 imageSourceID: id
             })
-            .update({
-                term: term
-            })
+            .update(obj)
             .then(function (data) {
+
+                obj._id = _id;
 
                 request.post({
                     url: config.mmsServices + 'vocabs/index/record',
                     form: {
-                        'id': id
+                        'obj': obj,
+                        'type': 'image_sources'
                     }
                 }, function (error, httpResponse, body) {
 
@@ -287,15 +296,15 @@ exports.saveLocalCreators = function (req, callback) {
         delete record['action'];
 
         var obj = {};
-        obj.preferred_terms_term_text = record['creator'];
-        obj.non_preferred_terms_term_text = record['creator.alternative'];
-        obj.nationalities = record['description.nationality'];
-        obj.role_id = record['description.role'];
-        obj.preferred_biographies_biography_text = record['description.creatorbio'];
-        obj.preferred_biographies_sex = record['sex'];
-        obj.preferred_terms_source_id = record['source'];
-        obj.preferred_biographies_birth_date = record['earliestdates'];
-        obj.preferred_biographies_death_date = record['latestdates'];
+        obj.preferred_terms_term_text = record['creator'].toString();
+        obj.non_preferred_terms_term_text = record['creator.alternative'].toString();
+        obj.nationalities = record['description.nationality'].toString();
+        obj.role_id = record['description.role'].toString();
+        obj.preferred_biographies_biography_text = record['description.creatorbio'].toString();
+        obj.preferred_biographies_sex = record['sex'].toString();
+        obj.preferred_terms_source_id = record['source'].toString();
+        obj.preferred_biographies_birth_date = record['earliestdates'].toString();
+        obj.preferred_biographies_death_date = record['latestdates'].toString();
 
         knex('local_creators')
             .insert(obj)
@@ -303,10 +312,13 @@ exports.saveLocalCreators = function (req, callback) {
 
                 var id = data[0];
 
+                obj.id = id;
+
                 request.post({
                     url: config.mmsServices + 'vocabs/index/record',
                     form: {
-                        'id': id
+                        'obj': obj,
+                        'type': 'creators'
                     }
                 }, function (error, httpResponse, body) {
 
@@ -335,22 +347,35 @@ exports.saveLocalCreators = function (req, callback) {
 
     if (action === 'updatelocalcreator') {
 
-        var id = req.body.id[0],
-            term = req.body.term;
+        var id = record['id'].toString(),
+            _id = record['_id'].toString();
 
-        knex('local_instructors')
+        var obj = {};
+        obj.id = id;
+        obj.preferred_terms_term_text = record['creator'].toString();
+        obj.non_preferred_terms_term_text = record['creator.alternative'].toString();
+        obj.nationalities = record['description.nationality'].toString();
+        obj.role_id = record['description.role'].toString();
+        obj.preferred_biographies_biography_text = record['description.creatorbio'].toString();
+        obj.preferred_biographies_sex = record['sex'].toString();
+        obj.preferred_terms_source_id = record['source'].toString();
+        obj.preferred_biographies_birth_date = record['earliestdates'].toString();
+        obj.preferred_biographies_death_date = record['latestdates'].toString();
+
+        knex('local_creators')
             .where({
-                instructorID: id
+                id: id
             })
-            .update({
-                term: term
-            })
+            .update(obj)
             .then(function (data) {
+
+                obj._id = _id;
 
                 request.post({
                     url: config.mmsServices + 'vocabs/index/record',
                     form: {
-                        'id': id
+                        'obj': obj,
+                        'type': 'creators'
                     }
                 }, function (error, httpResponse, body) {
 
@@ -370,8 +395,6 @@ exports.saveLocalCreators = function (req, callback) {
                         throw 'FATAL: unable to index record';
                     }
                 });
-
-
             })
             .catch(function (error) {
                 // TODO: log
