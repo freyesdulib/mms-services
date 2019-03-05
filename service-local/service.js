@@ -422,12 +422,15 @@ exports.saveLocalInstructors = function (req, callback) {
             .insert(record)
             .then(function (data) {
 
-                var id = data[0];
+                var obj = {};
+                obj.instructorID = data[0];
+                obj.term = record.term;
 
                 request.post({
                     url: config.mmsServices + 'vocabs/index/record',
                     form: {
-                        'id': id
+                        'obj': obj,
+                        'type': 'instructors'
                     }
                 }, function (error, httpResponse, body) {
 
@@ -457,6 +460,7 @@ exports.saveLocalInstructors = function (req, callback) {
     if (action === 'updateinstructor') {
 
         var id = req.body.id[0],
+            _id = req.body._id[0],
             term = req.body.term;
 
         knex('local_instructors')
@@ -468,10 +472,16 @@ exports.saveLocalInstructors = function (req, callback) {
             })
             .then(function (data) {
 
+                var obj = {};
+                obj._id = _id;
+                obj.term = term;
+                obj.instructorID = id;
+
                 request.post({
                     url: config.mmsServices + 'vocabs/index/record',
                     form: {
-                        'id': id
+                        'obj': obj,
+                        'type': 'instructors'
                     }
                 }, function (error, httpResponse, body) {
 
