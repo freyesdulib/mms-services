@@ -15,11 +15,13 @@ var config = require('../config/config.js'),
     });
 
 /**
- *
+ * creates and updates index vocabulary records
  * @param req
  * @param callback
  */
 exports.indexVocabRecord = function (req, callback) {
+
+    // TODO: check that body exists, return 400 if it does not.
 
     var doc = req.body.obj,
         type = req.body.type,
@@ -71,7 +73,7 @@ exports.indexVocabRecord = function (req, callback) {
     });
 };
 
-/**
+/** TODO: ...
  * Indexes all vocabulary records
  * @param req
  * @param callback

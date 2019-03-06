@@ -81,6 +81,47 @@ exports.getLocalCreators = function (req, callback) {
  * @param callback
  * @returns {boolean}
  */
+exports.getLocalSubjects = function (req, callback) {
+
+    var term = validator.trim(req.query.term);
+
+    if (term === undefined) {
+
+        callback({
+            status: 400,
+            data: 'Bad request.'
+        });
+
+        return false;
+    }
+
+    search({
+        from: 0,
+        size: 10000,
+        index: 'mms_vocabs_local_subjects',
+        body: {
+            'query': {
+                'multi_match': {
+                    'query': term,
+                    'fields': [
+                        'preferred_terms_term_text'
+                    ]
+                }
+            }
+        }
+    }, function (response) {
+        callback(response);
+    });
+
+    return false;
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
 exports.getLocalCreatorsById = function (req, callback) {
 
     var id = validator.trim(req.query.id);
@@ -128,6 +169,7 @@ exports.getLocalSources = function (req, callback) {
             message: 'Bad request'
 
         });
+
         return false;
     }
 
@@ -162,8 +204,6 @@ exports.getLocalSources = function (req, callback) {
 
         for (var i = 0; i < data.length; i++) {
             results['_id'] = data[i]._id;
-            // results['imageSourceID'] = data[i]._source.imageSourceID;
-            // results['term'] = data[i]._source.term;
             results['id'] = data[i]._source.imageSourceID;
             results['label'] = data[i]._source.term;
             dataArr.push(results);

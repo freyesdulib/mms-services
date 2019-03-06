@@ -20,6 +20,12 @@ exports.getLocalCreatorsById = function (req, res) {
     });
 };
 
+exports.getLocalSubjects = function (req, res) {
+    Local.getLocalSubjects(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
 exports.getArtTypes = function (req, res) {
     Local.getArtTypes(req, function (data) {
         res.status(data.status).send(data.data);

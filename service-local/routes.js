@@ -13,6 +13,9 @@ module.exports = function (app) {
     app.route('/api/v3/vocabs/local/creators/id')
         .get(Local.getLocalCreatorsById);
 
+    app.route('/api/v3/vocabs/local/subjects')
+        .get(Local.getLocalSubjects);
+
     app.route('/api/v3/vocabs/local/art_types')
         .get(Local.getArtTypes);
 
