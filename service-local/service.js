@@ -1,10 +1,10 @@
 var config = require('../config/config.js'),
+    logger = require('../libs/log4'),
     es = require('elasticsearch'),
     validator = require('validator'),
     request = require('request'),
     client = new es.Client({
         host: config.elasticSearch
-        // log: 'trace'
     }),
     knex = require('knex')({
         client: 'mysql2',
@@ -43,6 +43,8 @@ exports.getLocalCreators = function (req, callback) {
     var term = validator.trim(req.query.term);
 
     if (term === undefined) {
+
+        logger.module().error('ERROR: Bad request.');
 
         callback({
             status: 400,
@@ -87,6 +89,8 @@ exports.getLocalSubjects = function (req, callback) {
 
     if (term === undefined) {
 
+        logger.module().error('ERROR: Bad request.');
+
         callback({
             status: 400,
             data: 'Bad request.'
@@ -128,6 +132,8 @@ exports.getLocalCreatorsById = function (req, callback) {
 
     if (id === undefined) {
 
+        logger.module().error('ERROR: Bad request.');
+
         callback({
             status: 400,
             data: 'Bad request.'
@@ -164,6 +170,9 @@ exports.getLocalCreatorsById = function (req, callback) {
 exports.getLocalSources = function (req, callback) {
 
     if (req.query.term === undefined) {
+
+        logger.module().error('ERROR: Bad request.');
+
         callback({
             status: 400,
             message: 'Bad request'
@@ -246,24 +255,23 @@ exports.saveLocalSources = function (req, callback) {
                 }, function (error, httpResponse, body) {
 
                     if (error) {
-                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
                         throw 'ERROR: unable to index record';
                     }
 
                     if (httpResponse.statusCode === 201) {
-                        // logger.module().info('INFO: record indexed');
                         callback('Created');
                         return false;
                     } else {
-                        // logger.module().fatal('FATAL: unable to index record');
+                        logger.module().error('ERROR: unable to index record');
                         callback('Not Created');
-                        throw 'FATAL: unable to index record';
+                        throw 'ERROR: unable to index record';
                     }
                 });
             })
             .catch(function (error) {
-                // logger.module().error('ERROR: unable to save local source (saveLocalSources) ' + error);
+                logger.module().error('ERROR: unable to save local source (saveLocalSources) ' + error);
                 throw 'ERROR: unable to save local source (saveLocalSources) ' + error;
             });
     }
@@ -295,28 +303,24 @@ exports.saveLocalSources = function (req, callback) {
                 }, function (error, httpResponse, body) {
 
                     if (error) {
-                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
                         throw 'ERROR: unable to index record';
                     }
 
                     if (httpResponse.statusCode === 201) {
-                        // logger.module().info('INFO: record indexed');
                         callback('Created');
                         return false;
                     } else {
-                        // logger.module().fatal('FATAL: unable to index record');
+                        logger.module().error('ERROR: unable to index record');
                         callback('Not Created');
-                        throw 'FATAL: unable to index record';
+                        throw 'ERROR: unable to index record';
                     }
                 });
-
-
             })
             .catch(function (error) {
-                // TODO: log
-                console.log(error);
-                throw error;
+                logger.module().error('ERROR: unable to update local source (saveLocalSources) ' + error);
+                throw 'ERROR: unable to update local source (saveLocalSources) ' + error;
             });
     }
 };
@@ -363,25 +367,24 @@ exports.saveLocalCreators = function (req, callback) {
                 }, function (error, httpResponse, body) {
 
                     if (error) {
-                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
                         throw 'ERROR: unable to index record';
                     }
 
                     if (httpResponse.statusCode === 201) {
-                        // logger.module().info('INFO: record indexed');
                         callback('Created');
                         return false;
                     } else {
-                        // logger.module().fatal('FATAL: unable to index record');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
-                        throw 'FATAL: unable to index record';
+                        throw 'FATAL: unable to index record ' + error;
                     }
                 });
             })
             .catch(function (error) {
-                // logger.module().error('ERROR: unable to save local source (saveLocalSources) ' + error);
-                throw 'ERROR: unable to save local source (saveLocalSources) ' + error;
+                logger.module().error('ERROR: unable to save local creators (saveLocalCreators) ' + error);
+                throw 'ERROR: unable to save local creators (saveLocalCreators) ' + error;
             });
     }
 
@@ -420,26 +423,24 @@ exports.saveLocalCreators = function (req, callback) {
                 }, function (error, httpResponse, body) {
 
                     if (error) {
-                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
                         throw 'ERROR: unable to index record';
                     }
 
                     if (httpResponse.statusCode === 201) {
-                        // logger.module().info('INFO: record indexed');
                         callback('Created');
                         return false;
                     } else {
-                        // logger.module().fatal('FATAL: unable to index record');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
-                        throw 'FATAL: unable to index record';
+                        throw 'ERROR: unable to index record ' + error;
                     }
                 });
             })
             .catch(function (error) {
-                // TODO: log
-                console.log(error);
-                throw error;
+                logger.module().error('ERROR: unable to update local creators (saveLocalCreators) ' + error);
+                throw 'ERROR: unable to update local creators (saveLocalCreators) ' + error;
             });
     }
 };
@@ -475,25 +476,24 @@ exports.saveLocalInstructors = function (req, callback) {
                 }, function (error, httpResponse, body) {
 
                     if (error) {
-                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
                         throw 'ERROR: unable to index record';
                     }
 
                     if (httpResponse.statusCode === 201) {
-                        // logger.module().info('INFO: record indexed');
                         callback('Created');
                         return false;
                     } else {
-                        // logger.module().fatal('FATAL: unable to index record');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
-                        throw 'FATAL: unable to index record';
+                        throw 'ERROR: unable to index record ' + error;
                     }
                 });
             })
             .catch(function (error) {
-                // logger.module().error('ERROR: unable to save local source (saveLocalSources) ' + error);
-                throw 'ERROR: unable to save local source (saveLocalSources) ' + error;
+                logger.module().error('ERROR: unable to save local instructors (saveLocalInstructors) ' + error);
+                throw 'ERROR: unable to save local instructors (saveLocalInstructors) ' + error;
             });
     }
 
@@ -526,26 +526,24 @@ exports.saveLocalInstructors = function (req, callback) {
                 }, function (error, httpResponse, body) {
 
                     if (error) {
-                        // logger.module().fatal('FATAL: unable to begin transfer ' + error + ' (queue_objects)');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
                         throw 'ERROR: unable to index record';
                     }
 
                     if (httpResponse.statusCode === 201) {
-                        // logger.module().info('INFO: record indexed');
                         callback('Created');
                         return false;
                     } else {
-                        // logger.module().fatal('FATAL: unable to index record');
+                        logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
-                        throw 'FATAL: unable to index record';
+                        throw 'ERROR: unable to index record';
                     }
                 });
             })
             .catch(function (error) {
-                // TODO: log
-                console.log(error);
-                throw error;
+                logger.module().error('ERROR: unable to update local instructors (saveLocalInstructors) ' + error);
+                throw 'ERROR: unable to update local instructors (saveLocalInstructors) ' + error;
             });
     }
 };
@@ -644,11 +642,13 @@ var search = function (obj, callback) {
         });
 
     }, function (error) {
-        console.log(error);
+
+        logger.module().error('ERROR: unable to search index ' + error);
+
         callback({
             status: 500,
             data: [],
-            message: 'Error'
+            message: 'ERROR: unable to search index ' + error
         });
     });
 };
