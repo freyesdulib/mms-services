@@ -24,9 +24,7 @@ var config = require('../config/config.js'),
  */
 exports.indexVocabRecord = function (req, callback) {
 
-    console.log('index vocab record', req.body);
-
-    if (req.body !== undefined) {
+    if (req.body === undefined) {
 
         logger.module().error('ERROR: Bad request.');
 
