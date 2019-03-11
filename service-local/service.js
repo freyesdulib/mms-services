@@ -525,6 +525,8 @@ exports.saveLocalInstructors = function (req, callback) {
                     }
                 }, function (error, httpResponse, body) {
 
+                    console.log('update instructor: ', httpResponse);
+
                     if (error) {
                         logger.module().error('ERROR: unable to index record ' + error);
                         callback('Not Created');
