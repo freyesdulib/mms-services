@@ -10,6 +10,6 @@ var app = express();
 
 app.listen(process.env.APP_PORT);
 
-console.log('Repository application running at http://' + process.env.APP_HOST + ':' + process.env.APP_PORT + ' in ' + process.env.NODE_ENV + ' mode.');
+console.log('MMS services running at http://' + process.env.APP_HOST + ':' + process.env.APP_PORT + ' in ' + process.env.NODE_ENV + ' mode.');
 
 module.exports = app;

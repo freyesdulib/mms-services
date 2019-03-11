@@ -70,8 +70,8 @@ exports.indexVocabRecord = function (req, callback) {
         client.index(obj, function (error, response) {
 
             if (error) {
-                logger.module().error('ERROR: Unable to update record.');
-                throw 'ERROR: Unable to update record.';
+                logger.module().error('ERROR: Unable to index record.');
+                throw 'ERROR: Unable to index record.';
             }
         });
     }
