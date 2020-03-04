@@ -40,6 +40,7 @@ module.exports = function () {
     require('../service-local/routes')(app);
     require('../service-indexer/routes')(app);
     require('../service-mms/routes')(app);
+    require('../service-auth/routes')(app);
 
     return server;
 };
