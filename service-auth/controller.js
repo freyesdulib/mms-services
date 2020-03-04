@@ -18,11 +18,8 @@
 
 'use strict';
 
-const // CONFIG = require('../config/config'),
-    VALIDATOR = require('validator'),
-    // TOKEN = require('../libs/tokens'),
-    SERVICE = require('../auth/service');
-    // USER = require('../users/model');
+const VALIDATOR = require('validator'),
+    SERVICE = require('../service-auth/service');
 
 exports.login = function (req, res) {
 
@@ -58,8 +55,6 @@ exports.login = function (req, res) {
         } else {
 
             SERVICE.authenticate(username, password, function (isAuth) {
-
-                console.log(isAuth);
 
                 if (isAuth.auth === true) {
 

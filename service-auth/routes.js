@@ -18,7 +18,7 @@
 
 'use strict';
 
-const AUTH = require('../auth/controller');
+const AUTH = require('../service-auth/controller');
 
 module.exports = function (app) {
 
