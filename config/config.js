@@ -15,5 +15,6 @@ module.exports = {
     gettApiPassword: process.env.GETTY_API_PASSWORD,
     requestOrigin: process.env.REQUEST_ORIGIN,
     fedora: process.env.FEDORA,
-    solr: process.env.SOLR
+    solr: process.env.SOLR,
+    ldap: process.env.LDAP
 };
