@@ -39,6 +39,7 @@ module.exports = function () {
     require('../service-lc/routes')(app);
     require('../service-local/routes')(app);
     require('../service-indexer/routes')(app);
+    require('../service-mms/routes')(app);
 
     return server;
 };

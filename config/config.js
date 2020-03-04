@@ -13,5 +13,7 @@ module.exports = {
     gettyApiAatHost: process.env.GETTY_API_AAT_HOST,
     gettyApiUsername: process.env.GETTY_API_USERNAME,
     gettApiPassword: process.env.GETTY_API_PASSWORD,
-    requestOrigin: process.env.REQUEST_ORIGIN
+    requestOrigin: process.env.REQUEST_ORIGIN,
+    fedora: process.env.FEDORA,
+    solr: process.env.SOLR
 };
