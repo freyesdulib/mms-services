@@ -25,8 +25,8 @@ exports.login = function (req, res) {
 
     if (req.body !== undefined) {
 
-        let username = req.body.username.trim(),
-            password = req.body.password.trim();
+        let username = VALIDATOR.trim(req.body.username),
+            password = VALIDATOR.trim(req.body.password);
 
         if (username.length === 0) {
 
