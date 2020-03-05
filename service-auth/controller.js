@@ -59,12 +59,14 @@ exports.login = function (req, res) {
                 if (isAuth.auth === true) {
 
                     res.status(200).send({
+                        isAuthenticated: true,
                         message: 'Authenticated.'
                     });
 
                 } else if (isAuth.auth === false) {
 
                     res.status(401).send({
+                        isAuthenticated: false,
                         message: 'Authenticate failed.'
                     });
                 }
