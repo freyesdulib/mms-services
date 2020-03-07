@@ -18,7 +18,10 @@
 
 'use strict';
 
-const VALIDATOR = require('validator'),
+const CONFIG = require('../config/config'),
+    VALIDATOR = require('validator'),
+    REQUEST = require('request'),
+    LOGGER = require('../libs/log4'),
     SERVICE = require('../service-auth/service');
 
 exports.login = function (req, res) {
@@ -58,10 +61,31 @@ exports.login = function (req, res) {
 
                 if (isAuth.auth === true) {
 
-                    res.status(200).send({
-                        isAuthenticated: true,
-                        message: 'Authenticated.'
-                    });
+                    REQUEST.post({
+                            url: CONFIG.legacyLdap, form: {
+                                username: username
+                            }
+                        },
+                        function (error, headers, response) {
+
+                            if (error) {
+
+                                LOGGER.module().error('ERROR: [/auth/service module (authenticate)] request to LDAP failed ' + error);
+
+                                let errorObj = {
+                                    status: 500,
+                                    success: false,
+                                    message: 'An error has occurred.'
+                                };
+
+                                callback(errorObj);
+
+                                return false;
+                            }
+
+                            let responseObj = JSON.parse(response);
+                            res.status(200).send(responseObj);
+                        });
 
                 } else if (isAuth.auth === false) {
 

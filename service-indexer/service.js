@@ -220,6 +220,7 @@ exports.indexVocabs = function (req, callback) {
                     var record = data.pop();
 
                     client.index({
+                        id: record.id,
                         index: 'mms_vocabs_local_' + obj.table,
                         type: 'data',
                         body: record

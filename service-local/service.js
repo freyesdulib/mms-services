@@ -350,6 +350,12 @@ exports.saveLocalCreators = function (req, callback) {
         obj.preferred_biographies_birth_date = record['earliestdates'].toString();
         obj.preferred_biographies_death_date = record['latestdates'].toString();
 
+        if (record['earliestdates'].toString().length !== 0  && record['latestdates'].toString().length !== 0) {
+            obj.lifedates = record['earliestdates'].toString() + ' - ' + record['latestdates'].toString();
+        } else {
+            obj.lifedates = '';
+        }
+
         knex('local_creators')
             .insert(obj)
             .then(function (data) {
@@ -391,7 +397,7 @@ exports.saveLocalCreators = function (req, callback) {
     if (action === 'updatelocalcreator') {
 
         var id = record['id'].toString(),
-            _id = record['_id'].toString();
+            _id = record['id'].toString();
 
         var obj = {};
         obj.id = id;
@@ -404,6 +410,12 @@ exports.saveLocalCreators = function (req, callback) {
         obj.preferred_terms_source_id = record['source'].toString();
         obj.preferred_biographies_birth_date = record['earliestdates'].toString();
         obj.preferred_biographies_death_date = record['latestdates'].toString();
+
+        if (record['earliestdates'].toString().length !== 0  && record['latestdates'].toString().length !== 0) {
+            obj.lifedates = record['earliestdates'].toString() + ' - ' + record['latestdates'].toString();
+        } else {
+            obj.lifedates = '';
+        }
 
         knex('local_creators')
             .where({

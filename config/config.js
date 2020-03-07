@@ -16,5 +16,6 @@ module.exports = {
     requestOrigin: process.env.REQUEST_ORIGIN,
     fedora: process.env.FEDORA,
     solr: process.env.SOLR,
-    ldap: process.env.LDAP
+    ldap: process.env.LDAP,
+    legacyLdap: process.env.LEGACY_AUTH_URL
 };
