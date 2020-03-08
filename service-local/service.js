@@ -279,7 +279,7 @@ exports.saveLocalSources = function (req, callback) {
     if (action === 'updateimagesource') {
 
         var id = req.body.id[0],
-            _id = req.body._id[0];
+            _id = req.body.id[0];
 
         var obj = {};
         obj.imageSourceID = id;
@@ -512,7 +512,7 @@ exports.saveLocalInstructors = function (req, callback) {
     if (action === 'updateinstructor') {
 
         var id = req.body.id[0],
-            _id = req.body._id[0],
+            _id = req.body.id[0],
             term = req.body.term;
 
         knex('local_instructors')

@@ -219,6 +219,10 @@ exports.indexVocabs = function (req, callback) {
 
                     var record = data.pop();
 
+                    if (obj.table === 'image_sources') {
+                        record.id = record.imageSourceID;
+                    }
+
                     client.index({
                         id: record.id,
                         index: 'mms_vocabs_local_' + obj.table,
