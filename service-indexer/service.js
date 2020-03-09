@@ -223,6 +223,10 @@ exports.indexVocabs = function (req, callback) {
                         record.id = record.imageSourceID;
                     }
 
+                    if (obj.table === 'instructors') {
+                        record.id = record.instructorID;
+                    }
+
                     client.index({
                         id: record.id,
                         index: 'mms_vocabs_local_' + obj.table,
@@ -255,8 +259,6 @@ exports.indexVocabs = function (req, callback) {
             logger.module().error('ERROR: async (indexVocabs)');
         }
 
-        console.log(results);
-
         // logger.module().info('INFO: index created');
         // console.log('repoObj: ', results);
     });
@@ -287,7 +289,6 @@ function createDocument(pid, json) {
             console.log(error);
         }
 
-        console.log(response);
     });
 }
 
