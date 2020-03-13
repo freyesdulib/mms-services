@@ -17,5 +17,8 @@ module.exports = {
     fedora: process.env.FEDORA,
     solr: process.env.SOLR,
     ldap: process.env.LDAP,
-    legacyLdap: process.env.LEGACY_AUTH_URL
+    legacyLdap: process.env.LEGACY_AUTH_URL,
+    solrHost: process.env.SOLR_HOST,
+    solrPort: process.env.SOLR_PORT,
+    solrCore: process.env.SOLR_CORE
 };

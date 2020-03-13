@@ -61,6 +61,7 @@ exports.login = function (req, res) {
 
                 if (isAuth.auth === true) {
 
+                    // make request to legacy auth to initiate php session
                     REQUEST.post({
                             url: CONFIG.legacyLdap, form: {
                                 username: username
@@ -69,17 +70,7 @@ exports.login = function (req, res) {
                         function (error, headers, response) {
 
                             if (error) {
-
                                 LOGGER.module().error('ERROR: [/auth/service module (authenticate)] request to LDAP failed ' + error);
-
-                                let errorObj = {
-                                    status: 500,
-                                    success: false,
-                                    message: 'An error has occurred.'
-                                };
-
-                                callback(errorObj);
-
                                 return false;
                             }
 
