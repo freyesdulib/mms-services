@@ -42,6 +42,7 @@ module.exports = function () {
     require('../service-mms/routes')(app);
     require('../service-auth/routes')(app);
     require('../search/routes')(app);
+    require('../service-metadata/routes')(app);
 
     return server;
 };

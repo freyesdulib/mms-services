@@ -20,5 +20,9 @@ module.exports = {
     legacyLdap: process.env.LEGACY_AUTH_URL,
     solrHost: process.env.SOLR_HOST,
     solrPort: process.env.SOLR_PORT,
-    solrCore: process.env.SOLR_CORE
+    solrCore: process.env.SOLR_CORE,
+    repoHost: process.env.REPO_HOST,
+    repoUser: process.env.REPO_USER,
+    repoPassword: process.env.REPO_PASSWORD,
+    repoName: process.env.REPO_NAME
 };
