@@ -3,9 +3,18 @@ var config = require('../config/config.js'),
     logger = require('../libs/log4'),
     async = require('async'),
     request = require('request'),
-    parseString = require('xml2js').parseString;
+    parseString = require('xml2js').parseString,
     client = new es.Client({
         host: config.elasticSearch
+    }),
+    repo = require('knex')({
+        client: 'mysql2',
+        connection: {
+            host: config.repoHost,
+            user: config.repoUser,
+            password: config.repoPassword,
+            database: config.repoName
+        }
     }),
     knex = require('knex')({
         client: 'mysql2',
@@ -16,6 +25,156 @@ var config = require('../config/config.js'),
             database: config.dbNameVocab
         }
     });
+
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
+exports.indexAh = function (req, callback) {
+
+    if (req.body === undefined) {
+        console.log('Bad request');
+        return false;
+    }
+
+    repo('mms_objects')
+        .select('*')
+        .where({
+            objectType: 'image'
+        })
+        .then(function (data) {
+
+            var timer = setInterval(function () {
+
+                if (data.length === 0) {
+                    logger.module().info('art history records indexed.');
+                    clearInterval(timer);
+                    return false;
+                }
+
+                var record = data.pop();
+
+                let doc = {};
+                let json = JSON.parse(record.json);
+
+
+                for (let prop in json) {
+
+                    if (json[prop][0] !== '') {
+                        let es_prop = prop.replace('.', '_');
+                        doc[es_prop + '_t'] = json[prop];
+                    } else {
+                        return false;
+                    }
+                }
+
+                console.log(record.pid);
+
+                client.index({
+                    id: record.pid.replace('mms:', ''),
+                    index: 'mms_arthistory',
+                    type: 'data',
+                    body: doc
+                }, function (error, response) {
+
+                    if (error) {
+                        logger.module().error('ERROR: unable to indexed record. ' + error);
+                        throw 'ERROR: unable to indexed record. ' + error;
+                    }
+                });
+
+            }, 550);
+        })
+        .catch(function (error) {
+            logger.module().error('ERROR: unable to get record. ' + error);
+            throw 'ERROR: unable to get record. ' + error;
+        });
+
+    callback({
+        status: 200,
+        data: 'Indexing art history records...'
+    });
+};
+
+/**
+ * creates art history index
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
+exports.createAhIndex = function (req, callback) {
+    console.log('creating index...');
+    client.indices.create({
+        index: 'mms_arthistory',
+        body: {
+            'settings': {
+                'number_of_shards': 3,
+                'number_of_replicas': 2
+            }
+        }
+    }).then(function (result) {
+
+        if (result.acknowledged === true) {
+
+            // setTimeout(function() {
+
+                create_ah_mapping(function(result) {
+                    console.log(result);
+                });
+
+                callback({
+                    status: 201,
+                    message: 'Index created'
+                });
+
+            // }, 2000);
+
+        } else {
+
+            callback({
+                status: 201,
+                message: 'Index not created'
+            });
+        }
+
+    });
+
+    return false;
+};
+
+/**
+ * art history mapping
+ * @param callback
+ */
+function create_ah_mapping (callback) {
+
+    let mappingObj = get_ah_mapping(),
+        body = {
+            properties: mappingObj
+        };
+
+    client.indices.putMapping({
+        index: 'mms_arthistory',
+        type: 'data',
+        body: body
+    }).then(function (result) {
+
+        if (result.acknowledged === true) {
+            // LOGGER.module().info('INFO: [/indexer/service module (create_repo_index/create_mapping)] mapping created');
+            // obj.mappingCreated = true;
+            callback(true);
+            return false;
+        } else {
+            // LOGGER.module().error('ERROR: [/indexer/service module (create_repo_index/create_mapping)] unable to create mapping');
+            // obj.mappingCreated = false;
+            callback(false);
+            return false;
+        }
+    });
+}
+
 
 /**
  * creates and updates index vocabulary records
@@ -99,7 +258,7 @@ exports.indexVocabs = function (req, callback) {
 
     var table = req.body.data;
 
-    function deleteIndex (callback) {
+    function deleteIndex(callback) {
 
         var obj = {};
         obj.table = table;
@@ -132,7 +291,7 @@ exports.indexVocabs = function (req, callback) {
         });
     }
 
-    function createIndex (obj, callback) {
+    function createIndex(obj, callback) {
 
         if (obj.isIndexDeleted === false) {
             callback(null, obj);
@@ -165,7 +324,7 @@ exports.indexVocabs = function (req, callback) {
         });
     }
 
-    function createMapping (obj, callback) {
+    function createMapping(obj, callback) {
 
         if (obj.isIndexDeleted === false || obj.indexCreated === false) {
             callback(null, obj);
@@ -198,7 +357,7 @@ exports.indexVocabs = function (req, callback) {
         });
     }
 
-    function indexRecords (obj, callback) {
+    function indexRecords(obj, callback) {
 
         if (obj.isIndexDeleted === false || obj.indexCreated === false) {
             callback(null, obj);
@@ -298,7 +457,7 @@ function createDocument(pid, json) {
  * @param callback
  * @returns {boolean}
  */
-exports.deleteIndex = function(req, callback) {
+exports.deleteIndex = function (req, callback) {
 
     if (req.body.index === undefined) {
 
@@ -343,7 +502,7 @@ exports.deleteIndex = function(req, callback) {
  * @param callback
  * @returns {boolean}
  */
-exports.createIndex = function(req, callback) {
+exports.createIndex = function (req, callback) {
 
     if (req.body.index === undefined) {
 
@@ -393,7 +552,7 @@ exports.createIndex = function(req, callback) {
  * @param callback
  * @returns {boolean}
  */
-exports.createMapping = function(req, callback) {
+exports.createMapping = function (req, callback) {
 
     if (req.body.index === undefined) {
 
@@ -558,7 +717,7 @@ exports.fullIndex = function (req, callback) {
      * @param id
      * @param callback
      */
-    function index (id, callback) {
+    function index(id, callback) {
 
         knex('mms_objects').where({
             collectionID: id,
@@ -575,7 +734,7 @@ exports.fullIndex = function (req, callback) {
      *
      * @param id
      */
-    function getRecordsById (id) {
+    function getRecordsById(id) {
 
         knex('mms_objects').where({
             objectID: id
@@ -661,3 +820,309 @@ exports.getRecordsById = function (id) {
         console.log(error);
     });
 };
+
+/**
+ *  Returns field mappings
+ */
+function get_ah_mapping () {
+
+    return {
+        "type_arttype_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "title_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "creator_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "coverage_temporal_styleperiod_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "date_created_workdate_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "date_timeperiod_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "description_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "subject_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "format_medium_materialdisplay_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "identifier_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "identifier_master_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "instructor_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "title_alternative_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "source_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "contributor_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "date_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "description_detail_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "format_extent_measurements_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "source_pagenumber_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "coverage_spatial_repository_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "coverage_spatial_collection_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "coverage_spatial_repositoryid_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "coverage_spatial_location_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "rights_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "rights_accessRights_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "rights_license_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "rightsholder_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "creator_alternative_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "description_creatorbio_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "description_nationality_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "description_role_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "coverage_temporal_lifedates_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        },
+        "description_source_t": {
+            "type": "text",
+            "fields": {
+                "keyword": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                }
+            }
+        }
+    };
+}

@@ -8,6 +8,18 @@ exports.indexVocabs = function (req, res) {
     });
 };
 
+exports.indexAh = function (req, res) {
+    Indexer.indexAh(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
+exports.createAhIndex = function (req, res) {
+    Indexer.createAhIndex(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
 exports.indexVocabRecord = function (req, res) {
     Indexer.indexVocabRecord(req, function (data) {
         res.status(data.status).send(data.data);

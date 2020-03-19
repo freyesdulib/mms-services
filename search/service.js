@@ -1,6 +1,10 @@
+'use strict';
+
 const config = require('../config/config.js'),
-    solr = require('solr-client'),
-    client = solr.createClient(config.solrHost , config.solrPort, config.solrCore);
+    es = require('elasticsearch'),
+    client = new es.Client({
+        host: config.elasticSearch
+    });
 
 /**
  * Performs full text search
@@ -19,51 +23,27 @@ exports.search = function (req, callback) {
         return false;
     }
 
-    let query;
-    let keyword = req.query.keyword;
     let options = req.query.options;
+    let q = req.query.keyword;
 
-    if (options === 'all') {
-        query = client.createQuery()
-            .q(keyword)
-            .start(0)
-            .rows(500);
-    } else {
-
-        let field = options + '_t';
-        let qf = {};
-        qf[field] = 0.2;
-        query = client.createQuery()
-            .q(keyword)
-            .dismax()
-            .qf(qf)
-            .start(0)
-            .rows(500);
+    if (options !== 'all') {
+        q = options + '_t:' + q;
     }
 
-    let request = client.search(query, function(error, obj){
-
-        if (error) {
-
-            callback({
-                status: 500,
-                data: {}
-            });
-
-            return false;
-        }
+    client.search({
+        from: 0, // page,
+        size: 500, // total_on_page,
+        index: 'mms_arthistory',
+        type: 'data',
+        q: q
+    }).then(function (body) {
 
         callback({
             status: 200,
-            data: obj
+            data: body.hits
         });
-    });
 
-    request.setTimeout(200, function() {
-        console.log('search timeout');
-        callback({
-            status: 500,
-            data: {}
-        });
+    }, function (error) {
+        callback(error);
     });
 };
