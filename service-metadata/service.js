@@ -111,11 +111,11 @@ exports.get_metadata = function (req, callback) {
         })
         .then(function (data) {
 
-            console.log(JSON.parse(data[0].json));
+            let obj = JSON.parse(data[0].json);
 
             callback({
                 status: 200,
-                data: JSON.parse(data[0].json)
+                data: obj
             });
 
             /*
@@ -164,21 +164,37 @@ exports.save_metadata = function (req, callback) {
 
     function get_pid(callback) {
 
+        let obj = {};
+
         identifier.get_next_pid(function(pid) {
-            callback(null, pid);
+            obj.pid = pid;
+            callback(null, obj);
         });
     }
 
-    function create_record(pid, callback) {
-
+    function update(callback) {
         let obj = {};
-        obj.pid = 'mms:' + pid;
-        obj.userID = req.query.userID;
-        obj.collectionID = req.query.collectionID;
-        obj.xml = '';
+        obj.update = true;
+        callback(null, obj);
+    }
+
+    function create_record(obj, callback) {
 
         let json = req.body;
         let doc = {};
+
+        if (obj.update !== undefined) {
+            obj.pid = 'mms:' + json.pid;
+            delete obj.update;
+            delete json.type;
+            delete json.pid;
+        } else {
+            obj.pid = 'mms:' + obj.pid;
+        }
+
+        obj.userID = req.query.userID;
+        obj.collectionID = req.query.collectionID;
+        obj.xml = '';
 
         for (let prop in json) {
 
@@ -188,7 +204,6 @@ exports.save_metadata = function (req, callback) {
         }
 
         obj.json = JSON.stringify(doc);
-
         callback(null, obj);
     }
 
@@ -197,6 +212,28 @@ exports.save_metadata = function (req, callback) {
         knex('mms_objects')
             .insert(obj)
             .then(function (data) {
+                callback(null, obj);
+            })
+            .catch(function (error) {
+                console.log(error);
+                // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
+                // obj.error = 'FATAL: unable to save collection record ' + error;
+                // callback(null, obj);
+            });
+    }
+
+    function update_record(obj, callback) {
+
+        // let pid = obj.pid;
+        //delete obj.pid;
+
+        knex('mms_objects')
+            .where({
+                pid: obj.pid
+            })
+            .update(obj)
+            .then(function (data) {
+                console.log(data);
                 callback(null, obj);
             })
             .catch(function (error) {
@@ -240,108 +277,65 @@ exports.save_metadata = function (req, callback) {
                 return false;
             }
 
-            callback(null, response);
+            callback(null, obj);
         });
 
         return false;
     }
 
-    async.waterfall([
-        get_pid,
-        create_record,
-        save_record,
-        index_record
-    ], function (error, result) {
+    if (req.body.pid !== undefined) {
 
-        if (error) {
-            // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
-            throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
-        }
+        // update record
+        async.waterfall([
+            update,
+            create_record,
+            update_record,
+            index_record
+        ], function (error, result) {
 
-        callback({
-            status: 201,
-            message: 'Record created',
-            data: {
-                created: true,
-                updated: false
+            if (error) {
+                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
+                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
             }
-        });
-    });
 
-    return false;
-};
-
-/** TODO:...
- * update metadata
- * @param req
- * @param callback
- */
-exports.update_metadata = function (req, callback) {
-    // TODO: make sure pid is in payload
-    // console.log(req.query.pid);
-    // console.log(req.body);
-    if (req.body === undefined) {
-
-        callback({
-            status: 400,
-            message: 'Bad Request.'
-        });
-
-        return false;
-    }
-
-    function create_record(pid, callback) {
-
-        let obj = {};
-        obj.pid = pid;
-        obj.userID = req.query.userID;
-        obj.collectionID = req.query.collectionID;
-        obj.json = JSON.stringify(req.body);
-        obj.xml = '';
-
-        callback(null, obj);
-    }
-
-    // TODO:
-    function update_record(obj, callback) {
-
-        knex('mms_objects')
-            .insert(obj)
-            .then(function (data) {
-                callback(null, obj);
-            })
-            .catch(function (error) {
-                LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
-                obj.error = 'FATAL: unable to save collection record ' + error;
-                callback(null, obj);
+            callback({
+                status: 201,
+                message: 'Record created',
+                data: {
+                    created: false,
+                    updated: true,
+                    pid: result.pid.replace('mms:', '')
+                }
             });
-    }
-
-    function index_record(obj, callback) {
-        // TODO:
-    }
-
-    async.waterfall([
-        get_pid,
-        create_record,
-        update_record,
-        index_record
-    ], function (error, result) {
-
-        if (error) {
-            // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
-            throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
-        }
-
-        callback({
-            status: 201,
-            message: 'Record created',
-            data: {
-                created: true,
-                updated: false
-            }
         });
-    });
+
+        return false;
+
+    } else {
+
+        // new record
+        async.waterfall([
+            get_pid,
+            create_record,
+            save_record,
+            index_record
+        ], function (error, result) {
+
+            if (error) {
+                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
+                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+            }
+
+            callback({
+                status: 201,
+                message: 'Record created',
+                data: {
+                    created: true,
+                    updated: false
+                }
+            });
+        });
+    }
 
     return false;
 };
