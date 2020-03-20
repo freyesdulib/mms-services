@@ -20,6 +20,12 @@ exports.update_metadata = function (req, res) {
     });
 };
 
+exports.delete_metadata = function (req, res) {
+    METADATA.delete_metadata(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
 exports.convert = function (req, res) {
     METADATA.convert(req, function (data) {
         res.status(data.status).send(data.data);

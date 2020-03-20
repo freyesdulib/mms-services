@@ -224,16 +224,12 @@ exports.save_metadata = function (req, callback) {
 
     function update_record(obj, callback) {
 
-        // let pid = obj.pid;
-        //delete obj.pid;
-
         knex('mms_objects')
             .where({
                 pid: obj.pid
             })
             .update(obj)
             .then(function (data) {
-                console.log(data);
                 callback(null, obj);
             })
             .catch(function (error) {
@@ -338,4 +334,69 @@ exports.save_metadata = function (req, callback) {
     }
 
     return false;
+};
+
+/**
+ * Deletes record
+ * @param req
+ * @param callback
+ */
+exports.delete_metadata = function(req, callback) {
+
+    let pid = 'mms:' + req.query.pid;
+    let obj = {};
+    obj.isDeleted = 1;
+
+    knex('mms_objects')
+        .where({
+            pid: pid
+        })
+        .update(obj)
+        .then(function (data) {
+
+            if (data === 1) {
+
+                client.delete({
+                    index: 'mms_arthistory',
+                    type: 'data',
+                    id: pid.replace('mms:', '')
+                }, function (error, response) {
+
+                    if (error) {
+
+                        LOGGER.module().error('ERROR: [/indexer/service module (unindex_record/client.delete)] unable to unindex record ' + error);
+
+                        callback({
+                            message: 'ERROR: unable to unindex record ' + error
+                        });
+
+                        return false;
+                    }
+
+                    callback({
+                        status: 200,
+                        message: 'Record deleted',
+                        data: {
+                            deleted: true
+                        }
+                    });
+                });
+
+            } else {
+
+                callback({
+                    status: 200,
+                    message: 'Record not deleted',
+                    data: {
+                        deleted: false
+                    }
+                });
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+            // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
+            // obj.error = 'FATAL: unable to save collection record ' + error;
+            // callback(null, obj);
+        });
 };

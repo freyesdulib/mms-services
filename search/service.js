@@ -24,15 +24,15 @@ exports.search = function (req, callback) {
     }
 
     let options = req.query.options;
-    let q = req.query.keyword;
+    let q = req.query.keyword.replace('mms:', '');
 
     if (options !== 'all') {
         q = options + '_t:' + q;
     }
 
     client.search({
-        from: 0, // page,
-        size: 500, // total_on_page,
+        from: 0,
+        size: 500,
         index: 'mms_arthistory',
         type: 'data',
         q: q
