@@ -103,7 +103,7 @@ exports.get_metadata = function (req, callback) {
         return false;
     }
 
-   let pid = 'mms:' + req.query.pid;
+    let pid = 'mms:' + req.query.pid;
 
     knex('mms_objects')
         .where({
@@ -398,5 +398,233 @@ exports.delete_metadata = function(req, callback) {
             // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
             // obj.error = 'FATAL: unable to save collection record ' + error;
             // callback(null, obj);
+        });
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
+exports.save_queue_record = function(req, callback) {
+
+    // TODO: handle record updates.
+    // status = 0  incomplete
+    // status = 1  complete -> review queue
+    function get_pid(callback) {
+
+        let obj = {};
+
+        identifier.get_next_pid(function(pid) {
+            obj.pid = 'mms:' + pid;
+            callback(null, obj);
+        });
+    }
+
+    function update_queue(callback) {
+
+        let pid;
+
+        if (req.body.pid !== undefined) {
+            pid = 'mms:' + req.body.pid;
+        } else {
+            obj.update = false;
+        }
+
+        let obj = {};
+        obj.pid = pid;
+        obj.update = true;
+        callback(null, obj);
+    }
+
+    function create_record(obj, callback) {
+
+        if (obj.update !== undefined && obj.update === false) {
+            callback(null, obj);
+        }
+
+        let json = req.body;
+        let doc = {};
+        let status = json.status;
+
+        // delete json.status;
+        delete json.new;
+
+        obj.userID = req.query.userID;
+        obj.name = req.query.name;
+        obj.title = json.title;
+        obj.status = status;
+
+        for (let prop in json) {
+
+            if (json[prop][0] !== '') {
+                doc[prop] = json[prop];
+            }
+        }
+
+        obj.json = JSON.stringify(doc);
+        callback(null, obj);
+    }
+
+    function save_record(obj, callback) {
+
+        knex('mms_review_queue')
+            .insert(obj)
+            .then(function (data) {
+                callback(null, obj);
+            })
+            .catch(function (error) {
+                console.log(error);
+                // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
+                // obj.error = 'FATAL: unable to save collection record ' + error;
+                // callback(null, obj);
+            });
+    }
+
+    function update_record(obj, callback) {
+
+        if (obj.update !== undefined && obj.update === false) {
+            callback(null, obj);
+        }
+
+        let pid = obj.pid;
+        delete obj.pid;
+        delete obj.update;
+
+        knex('mms_review_queue')
+            .where({
+                pid: pid
+            })
+            .update(obj)
+            .then(function (data) {
+                callback(null, obj);
+            })
+            .catch(function (error) {
+                console.log(error);
+                // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
+                // obj.error = 'FATAL: unable to save collection record ' + error;
+                // callback(null, obj);
+            });
+    }
+
+    if (req.body.pid !== undefined) {
+
+        async.waterfall([
+            update_queue,
+            create_record,
+            update_record
+        ], function (error, result) {
+
+            if (error) {
+                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
+                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+            }
+
+            callback({
+                status: 201,
+                message: 'Record added to queue',
+                data: {
+                    created: true
+                }
+            });
+        });
+
+    } else {
+
+        async.waterfall([
+            get_pid,
+            create_record,
+            save_record
+        ], function (error, result) {
+
+            if (error) {
+                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
+                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+            }
+
+            callback({
+                status: 201,
+                message: 'Record added to queue',
+                data: {
+                    created: true
+                }
+            });
+        });
+    }
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ */
+exports.get_queue_records = function(req, callback) {
+
+    if (req.query.pid !== undefined) {
+
+        let pid = req.query.pid;
+
+        knex('mms_review_queue')
+            .where({
+                pid: pid
+            })
+            .then(function (data) {
+
+                callback({
+                    status: 200,
+                    data: data
+                });
+
+            })
+            .catch(function (error) {
+                // logger.module().error('ERROR: unable to get metadata ' + error);
+                throw 'ERROR: unable to get queue records ' + error;
+            });
+
+    } else {
+
+        knex('mms_review_queue')
+            .then(function (data) {
+
+                callback({
+                    status: 200,
+                    data: data
+                });
+
+            })
+            .catch(function (error) {
+                // logger.module().error('ERROR: unable to get metadata ' + error);
+                throw 'ERROR: unable to get queue records ' + error;
+            });
+    }
+};
+
+/**
+ * Gets queue record for editing
+ * @param req
+ * @param callback
+ */
+exports.get_queue_record = function(req, callback) {
+
+    let pid = req.query.pid;
+
+    knex('mms_review_queue')
+        .where({
+            pid: pid
+        })
+        .then(function (data) {
+
+            console.log(data);
+
+            callback({
+                status: 200,
+                data: data
+            });
+
+        })
+        .catch(function (error) {
+            // logger.module().error('ERROR: unable to get metadata ' + error);
+            throw 'ERROR: unable to get queue records ' + error;
         });
 };

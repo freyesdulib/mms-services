@@ -26,6 +26,18 @@ exports.delete_metadata = function (req, res) {
     });
 };
 
+exports.save_queue_record = function (req, res) {
+    METADATA.save_queue_record(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
+exports.get_queue_records = function (req, res) {
+    METADATA.get_queue_records(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
 exports.convert = function (req, res) {
     METADATA.convert(req, function (data) {
         res.status(data.status).send(data.data);

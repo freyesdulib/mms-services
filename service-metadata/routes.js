@@ -10,6 +10,10 @@ module.exports = function (app) {
         .put(CONTROLLER.update_metadata)
         .delete(CONTROLLER.delete_metadata);
 
+    app.route('/api/v3/queue')
+        .post(CONTROLLER.save_queue_record)
+        .get(CONTROLLER.get_queue_records);
+
     app.route('/api/v3/convert')
         .get(CONTROLLER.convert);
 };
