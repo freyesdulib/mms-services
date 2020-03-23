@@ -151,7 +151,7 @@ exports.get_metadata = function (req, callback) {
  */
 exports.save_metadata = function (req, callback) {
     // console.log(req.query);
-    // console.log(req.body);
+
     if (req.body === undefined) {
 
         callback({
@@ -178,13 +178,26 @@ exports.save_metadata = function (req, callback) {
         callback(null, obj);
     }
 
+    function new_from_queue(callback) {
+
+        let obj = {};
+        callback(null, obj);
+    }
+
     function create_record(obj, callback) {
 
         let json = req.body;
         let doc = {};
 
         if (obj.update !== undefined) {
-            obj.pid = 'mms:' + json.pid;
+
+            // check if pid array
+            if (typeof json.pid === 'object') {
+                obj.pid = 'mms:' + json.pid.pop().replace('mms:', '');
+            } else {
+                obj.pid = 'mms:' + json.pid;
+            }
+
             delete obj.update;
             delete json.type;
             delete json.pid;
@@ -279,7 +292,13 @@ exports.save_metadata = function (req, callback) {
         return false;
     }
 
-    if (req.body.pid !== undefined) {
+    // undefined, undefined  new record
+    // type = search update record (some pid values are arrays)
+
+    // queue
+    // pid type have values in update process
+
+    if (req.body.pid !== undefined && req.body.type === 'search') {
 
         // update record
         async.waterfall([
@@ -307,9 +326,38 @@ exports.save_metadata = function (req, callback) {
 
         return false;
 
+    } else if (req.body.pid !== undefined && req.body.type === 'queue') {
+        // create new record from queue
+        // re-use pid
+        // remove type
+        delete req.body.type;
+        async.waterfall([
+            new_from_queue,
+            create_record,
+            save_record,
+            index_record
+        ], function (error, result) {
+
+            if (error) {
+                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
+                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+            }
+
+            callback({
+                status: 201,
+                message: 'Record created',
+                data: {
+                    created: true,
+                    updated: false
+                }
+            });
+        });
+
+
+
     } else {
 
-        // new record
+        // create new record
         async.waterfall([
             get_pid,
             create_record,
