@@ -267,6 +267,11 @@ exports.save_metadata = function (req, callback) {
             }
         }
 
+        if (obj.pid === undefined) {
+            console.log('pid is undefined.  cannot index record.');
+            return false;
+        }
+
         client.index({
             index: 'mms_arthistory',
             type: 'data',
@@ -353,7 +358,7 @@ exports.save_metadata = function (req, callback) {
             });
         });
 
-
+        return false;
 
     } else {
 
@@ -447,6 +452,8 @@ exports.delete_metadata = function(req, callback) {
             // obj.error = 'FATAL: unable to save collection record ' + error;
             // callback(null, obj);
         });
+
+    return false;
 };
 
 /**
@@ -498,6 +505,8 @@ exports.save_queue_record = function(req, callback) {
 
         // delete json.status;
         delete json.new;
+        delete json.type;
+        delete json.pid;
 
         obj.userID = req.query.userID;
         obj.name = req.query.name;
@@ -539,6 +548,7 @@ exports.save_queue_record = function(req, callback) {
         let pid = obj.pid;
         delete obj.pid;
         delete obj.update;
+        delete obj.type;
 
         knex('mms_review_queue')
             .where({
@@ -663,8 +673,6 @@ exports.get_queue_record = function(req, callback) {
         })
         .then(function (data) {
 
-            console.log(data);
-
             callback({
                 status: 200,
                 data: data
@@ -676,3 +684,80 @@ exports.get_queue_record = function(req, callback) {
             throw 'ERROR: unable to get queue records ' + error;
         });
 };
+
+/**
+ * reassigns queue record to different user
+ * @param req
+ * @param callback
+ */
+exports.reassign_queue_record = function(req, callback) {
+
+    knex('mms_users')
+        .select('firstName', 'lastName')
+        .where({
+            userID: req.body.newID
+        })
+        .then(function(data) {
+            // console.log(data);
+            let name = data[0].firstName + ' ' + data[0].lastName;
+            console.log(name);
+
+            knex('mms_review_queue')
+                .where({
+                    pid: req.body.recordID
+                })
+                .update({
+                    userID: req.body.newID,
+                    name: name
+                })
+                .then(function(data) {
+                    console.log(data);
+
+                    callback({
+                        status: 200
+                    });
+
+                })
+                .catch(function(error) {
+                    console.log(error);
+                });
+        })
+        .catch(function(error) {
+            console.log(error);
+        });
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ */
+exports.get_queue_users = function(req, callback) {
+
+    console.log(req);
+
+    /*
+     let pid = req.query.pid;
+
+     knex('mms_review_queue')
+     .where({
+     pid: pid
+     })
+     .then(function (data) {
+
+     console.log(data);
+
+     callback({
+     status: 200,
+     data: data
+     });
+
+     })
+     .catch(function (error) {
+     // logger.module().error('ERROR: unable to get metadata ' + error);
+     throw 'ERROR: unable to get queue records ' + error;
+     });
+     */
+};
+
+

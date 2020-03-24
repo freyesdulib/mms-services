@@ -27,6 +27,7 @@ exports.search = function (req, callback) {
     let q = req.query.keyword.replace('mms:', '');
 
     if (options !== 'all') {
+        // TODO: use match query here
         q = options + '_t:' + q;
     }
 

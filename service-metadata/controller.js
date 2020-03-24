@@ -38,6 +38,18 @@ exports.get_queue_records = function (req, res) {
     });
 };
 
+exports.reassign_queue_record = function (req, res) {
+    METADATA.reassign_queue_record(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
+exports.get_queue_users = function (req, res) {
+    METADATA.get_queue_users(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
 exports.convert = function (req, res) {
     METADATA.convert(req, function (data) {
         res.status(data.status).send(data.data);
