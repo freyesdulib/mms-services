@@ -226,6 +226,14 @@ exports.indexVocabRecord = function (req, callback) {
         obj.type = 'data';
         obj.body = doc;
 
+        if (type === 'image_sources') {
+            obj.id = doc.imageSourceID;
+        }
+
+        if (type === 'instructors') {
+            obj.id = doc.instructorID;
+        }
+
         client.index(obj, function (error, response) {
 
             if (error) {

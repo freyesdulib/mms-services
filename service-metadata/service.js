@@ -71,7 +71,7 @@ exports.convert = function(req, callback) {
                     });
                 }
 
-            }, 550);
+            }, 600);
 
         })
         .catch(function (error) {
