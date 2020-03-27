@@ -50,6 +50,12 @@ exports.get_queue_users = function (req, res) {
     });
 };
 
+exports.delete_queue_record = function (req, res) {
+    METADATA.delete_queue_record(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
 exports.convert = function (req, res) {
     METADATA.convert(req, function (data) {
         res.status(data.status).send(data.data);

@@ -13,7 +13,8 @@ module.exports = function (app) {
     app.route('/api/v3/queue')
         .post(CONTROLLER.save_queue_record)
         .get(CONTROLLER.get_queue_records)
-        .put(CONTROLLER.reassign_queue_record);
+        .put(CONTROLLER.reassign_queue_record)
+        .delete(CONTROLLER.delete_queue_record);
 
     app.route('/api/v3/convert')
         .get(CONTROLLER.convert);

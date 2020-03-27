@@ -16,7 +16,16 @@ const config = require('../config/config.js'),
             password: config.repoPassword,
             database: config.repoName
         }
-    });
+    }),
+    knexv = require('knex')({
+        client: 'mysql2',
+        connection: {
+            host: config.dbHost,
+            user: config.dbUser,
+            password: config.dbPassword,
+            database: config.dbNameVocab
+        }
+    });;
 
 /**
  *
@@ -150,7 +159,6 @@ exports.get_metadata = function (req, callback) {
  * @param callback
  */
 exports.save_metadata = function (req, callback) {
-    // console.log(req.query);
 
     if (req.body === undefined) {
 
@@ -181,7 +189,22 @@ exports.save_metadata = function (req, callback) {
     function new_from_queue(callback) {
 
         let obj = {};
-        callback(null, obj);
+        let pid = 'mms:' + req.body.pid;
+
+        knex('mms_review_queue')
+            .where({
+                pid: pid
+            })
+            .update({
+                status: 3
+            })
+            .then(function(data) {
+                console.log(data);
+                callback(null, obj);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
     }
 
     function create_record(obj, callback) {
@@ -201,6 +224,8 @@ exports.save_metadata = function (req, callback) {
             delete obj.update;
             delete json.type;
             delete json.pid;
+        } else if (obj.pid === undefined) {
+            obj.pid = 'mms:' + json.pid;
         } else {
             obj.pid = 'mms:' + obj.pid;
         }
@@ -218,6 +243,27 @@ exports.save_metadata = function (req, callback) {
 
         obj.json = JSON.stringify(doc);
         callback(null, obj);
+    }
+
+    function get_instructor(obj, callback) {
+
+        let json = JSON.parse(obj.json);
+        let id = json.instructor[0];
+
+        knexv('local_instructors')
+            .where({
+                instructorID: id
+            })
+            .then(function(data) {
+                delete json.instructor;
+                json.instructor = data[0].term;
+                delete obj.json;
+                obj.json = JSON.stringify(json);
+                callback(null, obj);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
     }
 
     function save_record(obj, callback) {
@@ -309,6 +355,7 @@ exports.save_metadata = function (req, callback) {
         async.waterfall([
             update,
             create_record,
+            get_instructor,
             update_record,
             index_record
         ], function (error, result) {
@@ -339,6 +386,7 @@ exports.save_metadata = function (req, callback) {
         async.waterfall([
             new_from_queue,
             create_record,
+            get_instructor,
             save_record,
             index_record
         ], function (error, result) {
@@ -366,6 +414,7 @@ exports.save_metadata = function (req, callback) {
         async.waterfall([
             get_pid,
             create_record,
+            get_instructor,
             save_record,
             index_record
         ], function (error, result) {
@@ -524,6 +573,27 @@ exports.save_queue_record = function(req, callback) {
         callback(null, obj);
     }
 
+    function get_instructor(obj, callback) {
+
+        let json = JSON.parse(obj.json);
+        let id = json.instructor[0];
+
+        knexv('local_instructors')
+            .where({
+                instructorID: id
+            })
+            .then(function(data) {
+                delete json.instructor;
+                json.instructor = data[0].term;
+                delete obj.json;
+                obj.json = JSON.stringify(json);
+                callback(null, obj);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+    }
+
     function save_record(obj, callback) {
 
         knex('mms_review_queue')
@@ -571,6 +641,7 @@ exports.save_queue_record = function(req, callback) {
         async.waterfall([
             update_queue,
             create_record,
+            get_instructor,
             update_record
         ], function (error, result) {
 
@@ -593,6 +664,7 @@ exports.save_queue_record = function(req, callback) {
         async.waterfall([
             get_pid,
             create_record,
+            get_instructor,
             save_record
         ], function (error, result) {
 
@@ -700,7 +772,6 @@ exports.reassign_queue_record = function(req, callback) {
         .then(function(data) {
             // console.log(data);
             let name = data[0].firstName + ' ' + data[0].lastName;
-            console.log(name);
 
             knex('mms_review_queue')
                 .where({
@@ -732,32 +803,74 @@ exports.reassign_queue_record = function(req, callback) {
  * @param req
  * @param callback
  */
-exports.get_queue_users = function(req, callback) {
+exports.delete_queue_record = function(req, callback) {
 
-    console.log(req);
+    let pid = req.query.pid;
 
-    /*
-     let pid = req.query.pid;
+    knex('mms_review_queue')
+        .where({
+            pid: pid
+        })
+        .delete()
+        .then(function (data) {
 
-     knex('mms_review_queue')
-     .where({
-     pid: pid
-     })
-     .then(function (data) {
+            if (data === 1) {
 
-     console.log(data);
+                callback({
+                    status: 200,
+                    message: 'Record deleted',
+                    data: {
+                        deleted: true
+                    }
+                });
+            }
 
-     callback({
-     status: 200,
-     data: data
-     });
+                /*
+                client.delete({
+                    index: 'mms_arthistory',
+                    type: 'data',
+                    id: pid.replace('mms:', '')
+                }, function (error, response) {
 
-     })
-     .catch(function (error) {
-     // logger.module().error('ERROR: unable to get metadata ' + error);
-     throw 'ERROR: unable to get queue records ' + error;
-     });
-     */
+                    if (error) {
+
+                        LOGGER.module().error('ERROR: [/indexer/service module (unindex_record/client.delete)] unable to unindex record ' + error);
+
+                        callback({
+                            message: 'ERROR: unable to unindex record ' + error
+                        });
+
+                        return false;
+                    }
+
+                    callback({
+                        status: 200,
+                        message: 'Record deleted',
+                        data: {
+                            deleted: true
+                        }
+                    });
+                });
+
+            } else {
+
+                callback({
+                    status: 200,
+                    message: 'Record not deleted',
+                    data: {
+                        deleted: false
+                    }
+                });
+            }
+            */
+
+        })
+        .catch(function (error) {
+            console.log(error);
+            // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
+            // obj.error = 'FATAL: unable to save collection record ' + error;
+            // callback(null, obj);
+        });
+
+    return false;
 };
-
-
