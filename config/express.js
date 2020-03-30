@@ -7,7 +7,6 @@ var http = require('http'),
     methodOverride = require('method-override'),
     helmet = require('helmet'),
     cors = require('cors');
-    // config = require('../config/config');
 
 module.exports = function () {
 
@@ -22,19 +21,11 @@ module.exports = function () {
 
     app.use(cors());
     app.options('*', cors());
-    /*
-    app.use(function(req, res, next) {
-        res.setHeader("Access-Control-Allow-Origin", config.requestOrigin);
-        res.setHeader('Access-Control-Allow-Methods', 'GET', 'POST', 'PUT', 'DELETE');
-        res.setHeader("Access-Control-Allow-Headers", "X-Requested-With");
-        next();
-    });
-    */
-
     app.use(bodyParser.urlencoded({
         extended: true
     }));
 
+    app.use(express.static('./public'));
     app.use(bodyParser.json());
     app.use(methodOverride());
     app.use(helmet());

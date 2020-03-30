@@ -3,6 +3,7 @@
 const config = require('../config/config.js'),
     parseString = require('xml2js').parseString,
     async = require('async'),
+    fs = require("fs"),
     identifier = require('../libs/pid_gen'),
     es = require('elasticsearch'),
     client = new es.Client({
@@ -196,7 +197,7 @@ exports.save_metadata = function (req, callback) {
                 pid: pid
             })
             .update({
-                status: 3
+                status: 3 // hides record
             })
             .then(function(data) {
                 console.log(data);
@@ -824,46 +825,6 @@ exports.delete_queue_record = function(req, callback) {
                     }
                 });
             }
-
-                /*
-                client.delete({
-                    index: 'mms_arthistory',
-                    type: 'data',
-                    id: pid.replace('mms:', '')
-                }, function (error, response) {
-
-                    if (error) {
-
-                        LOGGER.module().error('ERROR: [/indexer/service module (unindex_record/client.delete)] unable to unindex record ' + error);
-
-                        callback({
-                            message: 'ERROR: unable to unindex record ' + error
-                        });
-
-                        return false;
-                    }
-
-                    callback({
-                        status: 200,
-                        message: 'Record deleted',
-                        data: {
-                            deleted: true
-                        }
-                    });
-                });
-
-            } else {
-
-                callback({
-                    status: 200,
-                    message: 'Record not deleted',
-                    data: {
-                        deleted: false
-                    }
-                });
-            }
-            */
-
         })
         .catch(function (error) {
             console.log(error);
@@ -873,4 +834,73 @@ exports.delete_queue_record = function(req, callback) {
         });
 
     return false;
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ */
+exports.get_batch_records = function(req, callback) {
+
+    knex('mms_objects')
+        .select('*')
+        .where({
+            isCataloged: 0,
+            isDeleted: 0,
+            collectionID: 2
+        })
+        .then(function(data) {
+            callback({
+                status: 200,
+                message: 'Batch Records',
+                data: data
+            });
+        })
+        .catch(function(error) {
+            console.log(error);
+        });
+
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ */
+exports.get_nas_object = function(req, callback) {
+
+    let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.object;
+
+    if (fs.existsSync(filePath)) {
+
+        callback({
+            status: 200,
+            header: {
+                'Content-Type': 'image/jpg'
+            },
+            data: filePath
+        });
+
+    } else {
+
+        callback({
+            status: 200,
+            header: {
+                'Content-Type': 'image/png'
+            },
+            data: '../public/images/object_not_found.png'
+        });
+    }
+
+    /*
+    if (file_exists($file)) {
+        $response = header('Content-type:' . $mimeType);
+        $response .= read_file($file);
+    } else {
+        $response = header('Content-type:' . $mimeType);
+        $response .= file_get_contents($objectNotFound);
+    }
+    */
+
 };

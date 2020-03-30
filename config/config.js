@@ -24,5 +24,6 @@ module.exports = {
     repoHost: process.env.REPO_HOST,
     repoUser: process.env.REPO_USER,
     repoPassword: process.env.REPO_PASSWORD,
-    repoName: process.env.REPO_NAME
+    repoName: process.env.REPO_NAME,
+    nasPath: process.env.NAS_PATH
 };

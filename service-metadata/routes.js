@@ -16,6 +16,12 @@ module.exports = function (app) {
         .put(CONTROLLER.reassign_queue_record)
         .delete(CONTROLLER.delete_queue_record);
 
+    app.route('/api/v3/batch')
+        .get(CONTROLLER.get_batch_records);
+
+    app.route('/api/v3/nas')
+        .get(CONTROLLER.get_nas_object);
+
     app.route('/api/v3/convert')
         .get(CONTROLLER.convert);
 };

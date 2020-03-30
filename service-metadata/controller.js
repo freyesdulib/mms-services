@@ -1,6 +1,7 @@
 'use strict';
 
-const METADATA = require('../service-metadata/service');
+const METADATA = require('../service-metadata/service'),
+    path = require('path');
 
 exports.get_metadata = function (req, res) {
     METADATA.get_metadata(req, function (data) {
@@ -53,6 +54,19 @@ exports.get_queue_users = function (req, res) {
 exports.delete_queue_record = function (req, res) {
     METADATA.delete_queue_record(req, function (data) {
         res.status(data.status).send(data.data);
+    });
+};
+
+exports.get_batch_records = function (req, res) {
+    METADATA.get_batch_records(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
+exports.get_nas_object = function (req, res) {
+    METADATA.get_nas_object(req, function (data) {
+        res.set(data.header);
+        res.sendFile(path.join(__dirname, data.data));
     });
 };
 
