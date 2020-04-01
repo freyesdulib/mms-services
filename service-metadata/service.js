@@ -3,11 +3,15 @@
 const config = require('../config/config.js'),
     parseString = require('xml2js').parseString,
     async = require('async'),
-    fs = require("fs"),
+    fs = require('fs'),
+    moment = require('moment'),
     identifier = require('../libs/pid_gen'),
     es = require('elasticsearch'),
     client = new es.Client({
         host: config.elasticSearch
+    }),
+    cmclient = new es.Client({
+        host: config.cmESHost
     }),
     knex = require('knex')({
         client: 'mysql2',
@@ -26,14 +30,15 @@ const config = require('../config/config.js'),
             password: config.dbPassword,
             database: config.dbNameVocab
         }
-    });;
+    });
+;
 
 /**
  *
  * @param req
  * @param callback
  */
-exports.convert = function(req, callback) {
+exports.convert = function (req, callback) {
 
     knex('mms_objects')
         .select('pid', 'xml')
@@ -42,7 +47,7 @@ exports.convert = function(req, callback) {
         })
         .then(function (data) {
 
-            let timer = setInterval(function() {
+            let timer = setInterval(function () {
 
                 if (data.length === 0) {
                     clearInterval(timer);
@@ -72,10 +77,10 @@ exports.convert = function(req, callback) {
                             .update({
                                 json: json
                             })
-                            .then(function(data) {
+                            .then(function (data) {
                                 console.log(data);
                             })
-                            .catch(function(error) {
+                            .catch(function (error) {
                                 console.log(error);
                             });
                     });
@@ -129,23 +134,23 @@ exports.get_metadata = function (req, callback) {
             });
 
             /*
-            parseString(data[0].xml, function (error, result) {
+             parseString(data[0].xml, function (error, result) {
 
-                if (error) {
+             if (error) {
 
-                    callback({
-                        status: 500
-                    });
+             callback({
+             status: 500
+             });
 
-                    return false;
-                }
+             return false;
+             }
 
-                callback({
-                    status: 200,
-                    data: result.dc
-                });
-            });
-            */
+             callback({
+             status: 200,
+             data: result.dc
+             });
+             });
+             */
         })
         .catch(function (error) {
             // logger.module().error('ERROR: unable to get metadata ' + error);
@@ -161,6 +166,10 @@ exports.get_metadata = function (req, callback) {
  */
 exports.save_metadata = function (req, callback) {
 
+    // console.log(req.body);
+    // TODO: remove empty values from arrays
+    // return false;
+
     if (req.body === undefined) {
 
         callback({
@@ -175,7 +184,7 @@ exports.save_metadata = function (req, callback) {
 
         let obj = {};
 
-        identifier.get_next_pid(function(pid) {
+        identifier.get_next_pid(function (pid) {
             obj.pid = pid;
             callback(null, obj);
         });
@@ -199,11 +208,11 @@ exports.save_metadata = function (req, callback) {
             .update({
                 status: 3 // hides record
             })
-            .then(function(data) {
+            .then(function (data) {
                 console.log(data);
                 callback(null, obj);
             })
-            .catch(function(error) {
+            .catch(function (error) {
                 console.log(error);
             });
     }
@@ -211,7 +220,6 @@ exports.save_metadata = function (req, callback) {
     function create_record(obj, callback) {
 
         let json = req.body;
-        let doc = {};
 
         if (obj.update !== undefined) {
 
@@ -237,12 +245,15 @@ exports.save_metadata = function (req, callback) {
 
         for (let prop in json) {
 
-            if (json[prop][0] !== '') {
-                doc[prop] = json[prop];
+            if (json[prop][0] === '' && json[prop].length === 1) {
+                delete json[prop];
+            } else if (json[prop][0] === '' && json[prop].length > 1) {
+                json[prop] = json[prop].filter(Boolean);
             }
+
         }
 
-        obj.json = JSON.stringify(doc);
+        obj.json = JSON.stringify(json);
         callback(null, obj);
     }
 
@@ -255,14 +266,14 @@ exports.save_metadata = function (req, callback) {
             .where({
                 instructorID: id
             })
-            .then(function(data) {
+            .then(function (data) {
                 delete json.instructor;
                 json.instructor = data[0].term;
                 delete obj.json;
                 obj.json = JSON.stringify(json);
                 callback(null, obj);
             })
-            .catch(function(error) {
+            .catch(function (error) {
                 console.log(error);
             });
     }
@@ -301,6 +312,8 @@ exports.save_metadata = function (req, callback) {
     }
 
     function index_record(obj, callback) {
+
+        // TODO: check if update=true to index into coursemedia ES
 
         let json = JSON.parse(obj.json);
         let doc = {};
@@ -444,7 +457,7 @@ exports.save_metadata = function (req, callback) {
  * @param req
  * @param callback
  */
-exports.delete_metadata = function(req, callback) {
+exports.delete_metadata = function (req, callback) {
 
     let pid = 'mms:' + req.query.pid;
     let obj = {};
@@ -512,7 +525,7 @@ exports.delete_metadata = function(req, callback) {
  * @param callback
  * @returns {boolean}
  */
-exports.save_queue_record = function(req, callback) {
+exports.save_queue_record = function (req, callback) {
 
     // TODO: handle record updates.
     // status = 0  incomplete
@@ -521,7 +534,7 @@ exports.save_queue_record = function(req, callback) {
 
         let obj = {};
 
-        identifier.get_next_pid(function(pid) {
+        identifier.get_next_pid(function (pid) {
             obj.pid = 'mms:' + pid;
             callback(null, obj);
         });
@@ -583,14 +596,14 @@ exports.save_queue_record = function(req, callback) {
             .where({
                 instructorID: id
             })
-            .then(function(data) {
+            .then(function (data) {
                 delete json.instructor;
                 json.instructor = data[0].term;
                 delete obj.json;
                 obj.json = JSON.stringify(json);
                 callback(null, obj);
             })
-            .catch(function(error) {
+            .catch(function (error) {
                 console.log(error);
             });
     }
@@ -690,7 +703,7 @@ exports.save_queue_record = function(req, callback) {
  * @param req
  * @param callback
  */
-exports.get_queue_records = function(req, callback) {
+exports.get_queue_records = function (req, callback) {
 
     if (req.query.pid !== undefined) {
 
@@ -736,7 +749,7 @@ exports.get_queue_records = function(req, callback) {
  * @param req
  * @param callback
  */
-exports.get_queue_record = function(req, callback) {
+exports.get_queue_record = function (req, callback) {
 
     let pid = req.query.pid;
 
@@ -763,14 +776,14 @@ exports.get_queue_record = function(req, callback) {
  * @param req
  * @param callback
  */
-exports.reassign_queue_record = function(req, callback) {
+exports.reassign_queue_record = function (req, callback) {
 
     knex('mms_users')
         .select('firstName', 'lastName')
         .where({
             userID: req.body.newID
         })
-        .then(function(data) {
+        .then(function (data) {
             // console.log(data);
             let name = data[0].firstName + ' ' + data[0].lastName;
 
@@ -782,7 +795,7 @@ exports.reassign_queue_record = function(req, callback) {
                     userID: req.body.newID,
                     name: name
                 })
-                .then(function(data) {
+                .then(function (data) {
                     console.log(data);
 
                     callback({
@@ -790,11 +803,11 @@ exports.reassign_queue_record = function(req, callback) {
                     });
 
                 })
-                .catch(function(error) {
+                .catch(function (error) {
                     console.log(error);
                 });
         })
-        .catch(function(error) {
+        .catch(function (error) {
             console.log(error);
         });
 };
@@ -804,7 +817,7 @@ exports.reassign_queue_record = function(req, callback) {
  * @param req
  * @param callback
  */
-exports.delete_queue_record = function(req, callback) {
+exports.delete_queue_record = function (req, callback) {
 
     let pid = req.query.pid;
 
@@ -841,7 +854,7 @@ exports.delete_queue_record = function(req, callback) {
  * @param req
  * @param callback
  */
-exports.get_batch_records = function(req, callback) {
+exports.get_batch_records = function (req, callback) {
 
     knex('mms_objects')
         .select('*')
@@ -850,14 +863,14 @@ exports.get_batch_records = function(req, callback) {
             isDeleted: 0,
             collectionID: 2
         })
-        .then(function(data) {
+        .then(function (data) {
             callback({
                 status: 200,
                 message: 'Batch Records',
                 data: data
             });
         })
-        .catch(function(error) {
+        .catch(function (error) {
             console.log(error);
         });
 
@@ -868,7 +881,7 @@ exports.get_batch_records = function(req, callback) {
  * @param req
  * @param callback
  */
-exports.get_nas_object = function(req, callback) {
+exports.get_nas_object = function (req, callback) {
 
     let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.object;
 
@@ -892,15 +905,122 @@ exports.get_nas_object = function(req, callback) {
             data: '../public/images/object_not_found.png'
         });
     }
+};
 
-    /*
-    if (file_exists($file)) {
-        $response = header('Content-type:' . $mimeType);
-        $response .= read_file($file);
+exports.check_object = function (req, callback) {
+
+    let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.file;
+
+    if (fs.existsSync(filePath)) {
+
+        callback({
+            status: 200,
+            data: {
+                status: 200
+            }
+        });
+
     } else {
-        $response = header('Content-type:' . $mimeType);
-        $response .= file_get_contents($objectNotFound);
+
+        callback({
+            status: 200,
+            data: {
+                status: 404
+            }
+        });
     }
-    */
+
+    return false;
+};
+
+/**
+ *
+ * @param req
+ * @param callback
+ */
+exports.publish_batch_records = function (req, callback) {
+
+    // timestamp   'Y-m-d H:i:s'
+
+    if (req.body.pids === undefined) {
+
+        console.log('no records to publish');
+
+        callback({
+            status: 200,
+            data: {
+                success: false
+            }
+        });
+
+        return false;
+    }
+
+    let pids = req.body.pids;
+
+    let timer = setInterval(function () {
+
+        if (pids.length === 0) {
+            clearInterval(timer);
+            console.log('done');
+            return false;
+        }
+
+        let pid = pids.pop();
+        console.log(pid);
+
+        knex('mms_objects')
+            .select('json')
+            .where({
+                pid: pid
+            })
+            .then(function(data) {
+
+                let json = JSON.parse(data[0].json);
+                let pid = json.pid;
+                json.id = pid;
+                delete json.pid;
+
+                cmclient.index({
+                    index: config.cmESIndex,
+                    type: 'data',
+                    id: pid.replace('mms:', ''),
+                    body: json
+                }, function (error, response) {
+
+                    console.log(response);
+
+                    if (error) {
+
+                        callback(null, {
+                            message: 'ERROR: unable to index record ' + error
+                        });
+
+                        return false;
+                    }
+
+                    knex('mms_objects')
+                        .where({
+                            pid: pid
+                        })
+                        .update({
+                            isCataloged: 1,
+                            isNew: 1,
+                            timeStamp: moment().format('Y-m-d H:i:s')
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                        });
+                });
+
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+
+    }, 5000);
 
 };

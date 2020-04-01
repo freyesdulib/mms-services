@@ -25,5 +25,7 @@ module.exports = {
     repoUser: process.env.REPO_USER,
     repoPassword: process.env.REPO_PASSWORD,
     repoName: process.env.REPO_NAME,
-    nasPath: process.env.NAS_PATH
+    nasPath: process.env.NAS_PATH,
+    cmESHost: process.env.CM_ELASTIC_SEARCH_HOST,
+    cmESIndex: process.env.CM_ELASTIC_SEARCH_INDEX
 };

@@ -17,7 +17,8 @@ module.exports = function (app) {
         .delete(CONTROLLER.delete_queue_record);
 
     app.route('/api/v3/batch')
-        .get(CONTROLLER.get_batch_records);
+        .get(CONTROLLER.get_batch_records)
+        .post(CONTROLLER.publish_batch_records);
 
     app.route('/api/v3/nas')
         .get(CONTROLLER.get_nas_object);
