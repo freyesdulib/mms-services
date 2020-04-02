@@ -7,6 +7,7 @@ const config = require('../config/config.js'),
     path = require('path'),
     moment = require('moment'),
     identifier = require('../libs/pid_gen'),
+    logger = require('../libs/log4'),
     es = require('elasticsearch'),
     client = new es.Client({
         host: config.elasticSearch
@@ -35,7 +36,7 @@ const config = require('../config/config.js'),
 ;
 
 /**
- *
+ * converts xml to json
  * @param req
  * @param callback
  */
@@ -62,7 +63,7 @@ exports.convert = function (req, callback) {
                     parseString(record.xml, function (error, result) {
 
                         if (error) {
-                            console.log(error);
+                            logger.module().error('ERROR: unable to get xml metadata ' + error);
                             return false;
                         }
 
@@ -82,24 +83,22 @@ exports.convert = function (req, callback) {
                                 console.log(data);
                             })
                             .catch(function (error) {
-                                console.log(error);
+                                logger.module().error('ERROR: unable to update json metadata ' + error);
                             });
                     });
                 }
 
             }, 600);
-
         })
         .catch(function (error) {
-            // logger.module().error('ERROR: unable to get metadata ' + error);
-            throw 'ERROR: unable to convert metadata ' + error;
+            logger.module().error('ERROR: unable to get xml metadata ' + error);
+            throw 'ERROR: unable to get xml metadata ' + error;
         });
 
     callback({
         status: 200,
         data: 'converting...'
     });
-
 };
 
 /**
@@ -133,31 +132,11 @@ exports.get_metadata = function (req, callback) {
                 status: 200,
                 data: obj
             });
-
-            /*
-             parseString(data[0].xml, function (error, result) {
-
-             if (error) {
-
-             callback({
-             status: 500
-             });
-
-             return false;
-             }
-
-             callback({
-             status: 200,
-             data: result.dc
-             });
-             });
-             */
         })
         .catch(function (error) {
-            // logger.module().error('ERROR: unable to get metadata ' + error);
+            logger.module().error('ERROR: unable to get metadata ' + error);
             throw 'ERROR: unable to get metadata ' + error;
         });
-
 };
 
 /**
@@ -166,10 +145,6 @@ exports.get_metadata = function (req, callback) {
  * @param callback
  */
 exports.save_metadata = function (req, callback) {
-
-    // console.log(req.body);
-    // TODO: remove empty values from arrays
-    // return false;
 
     if (req.body === undefined) {
 
@@ -214,7 +189,8 @@ exports.save_metadata = function (req, callback) {
                 callback(null, obj);
             })
             .catch(function (error) {
-                console.log(error);
+                logger.module().error('ERROR: unable to update queue status ' + error);
+                throw 'ERROR: unable to update queue status ' + error;
             });
     }
 
@@ -275,7 +251,8 @@ exports.save_metadata = function (req, callback) {
                 callback(null, obj);
             })
             .catch(function (error) {
-                console.log(error);
+                logger.module().error('ERROR: unable to get instructor term ' + error);
+                throw 'ERROR: unable to get instructor term ' + error;
             });
     }
 
@@ -287,10 +264,8 @@ exports.save_metadata = function (req, callback) {
                 callback(null, obj);
             })
             .catch(function (error) {
-                console.log(error);
-                // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
-                // obj.error = 'FATAL: unable to save collection record ' + error;
-                // callback(null, obj);
+                logger.module().error('ERROR: unable to save metadata record ' + error);
+                throw 'ERROR: unable to save metadata record ' + error;
             });
     }
 
@@ -305,10 +280,8 @@ exports.save_metadata = function (req, callback) {
                 callback(null, obj);
             })
             .catch(function (error) {
-                console.log(error);
-                // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
-                // obj.error = 'FATAL: unable to save collection record ' + error;
-                // callback(null, obj);
+                logger.module().error('ERROR: unable to update metadata record ' + error);
+                throw 'ERROR: unable to update metadata record ' + error;
             });
     }
 
@@ -329,7 +302,7 @@ exports.save_metadata = function (req, callback) {
         }
 
         if (obj.pid === undefined) {
-            console.log('pid is undefined.  cannot index record.');
+            logger.module().error('ERROR: pid is undefined.  cannot index record.');
             return false;
         }
 
@@ -342,7 +315,7 @@ exports.save_metadata = function (req, callback) {
 
             if (error) {
 
-                // LOGGER.module().error('ERROR: [/indexer/service module (index_record/client.index)] unable to index record ' + error);
+                logger.module().error('ERROR: unable to index record ' + error);
 
                 callback(null, {
                     message: 'ERROR: unable to index record ' + error
@@ -358,12 +331,6 @@ exports.save_metadata = function (req, callback) {
         return false;
     }
 
-    // undefined, undefined  new record
-    // type = search update record (some pid values are arrays)
-
-    // queue
-    // pid type have values in update process
-
     if (req.body.pid !== undefined && req.body.type === 'search') {
 
         // update record
@@ -376,8 +343,8 @@ exports.save_metadata = function (req, callback) {
         ], function (error, result) {
 
             if (error) {
-                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
-                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+                logger.module().error('ERROR: unable to index record ' + error);
+                throw 'ERROR: unable to index record ' + error;
             }
 
             callback({
@@ -407,8 +374,8 @@ exports.save_metadata = function (req, callback) {
         ], function (error, result) {
 
             if (error) {
-                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
-                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+                logger.module().error('ERROR: unable to create queue record ' + error);
+                throw 'ERROR: unable to create queue record ' + error;
             }
 
             callback({
@@ -435,8 +402,8 @@ exports.save_metadata = function (req, callback) {
         ], function (error, result) {
 
             if (error) {
-                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
-                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+                logger.module().error('ERROR: unable to create metadata record ' + error);
+                throw 'ERROR: unable to create metadata record ' + error;
             }
 
             callback({
@@ -481,7 +448,7 @@ exports.delete_metadata = function (req, callback) {
 
                     if (error) {
 
-                        LOGGER.module().error('ERROR: [/indexer/service module (unindex_record/client.delete)] unable to unindex record ' + error);
+                        logger.module().error('ERROR: unable to unindex record ' + error);
 
                         callback({
                             message: 'ERROR: unable to unindex record ' + error
@@ -511,17 +478,15 @@ exports.delete_metadata = function (req, callback) {
             }
         })
         .catch(function (error) {
-            console.log(error);
-            // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
-            // obj.error = 'FATAL: unable to save collection record ' + error;
-            // callback(null, obj);
+            logger.module().error('ERROR: unable to delete metadata record ' + error);
+            throw 'ERROR: unable to delete metadata record ' + error;
         });
 
     return false;
 };
 
 /**
- *
+ * Saves queue records
  * @param req
  * @param callback
  * @returns {boolean}
@@ -605,7 +570,8 @@ exports.save_queue_record = function (req, callback) {
                 callback(null, obj);
             })
             .catch(function (error) {
-                console.log(error);
+                logger.module().error('ERROR: unable to get instructor term ' + error);
+                throw 'ERROR: unable to get instructor term ' + error;
             });
     }
 
@@ -617,10 +583,8 @@ exports.save_queue_record = function (req, callback) {
                 callback(null, obj);
             })
             .catch(function (error) {
-                console.log(error);
-                // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
-                // obj.error = 'FATAL: unable to save collection record ' + error;
-                // callback(null, obj);
+                logger.module().error('ERROR: unable to save queue record ' + error);
+                throw 'ERROR: unable to save queue record ' + error;
             });
     }
 
@@ -644,10 +608,8 @@ exports.save_queue_record = function (req, callback) {
                 callback(null, obj);
             })
             .catch(function (error) {
-                console.log(error);
-                // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
-                // obj.error = 'FATAL: unable to save collection record ' + error;
-                // callback(null, obj);
+                logger.module().error('ERROR: unable to update queue record ' + error);
+                throw 'ERROR: unable to update queue record ' + error;
             });
     }
 
@@ -661,8 +623,8 @@ exports.save_queue_record = function (req, callback) {
         ], function (error, result) {
 
             if (error) {
-                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
-                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+                logger.module().error('ERROR: unable to update queue record ' + error);
+                throw 'ERROR: unable to update queue record ' + error;
             }
 
             callback({
@@ -684,8 +646,8 @@ exports.save_queue_record = function (req, callback) {
         ], function (error, result) {
 
             if (error) {
-                // LOGGER.module().error('ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error);
-                throw 'ERROR: [/repository/model module (update_metadata_cron/async.waterfall)] ' + error;
+                logger.module().error('ERROR: unable to save queue record ' + error);
+                throw 'ERROR: unable to save queue record ' + error;
             }
 
             callback({
@@ -700,7 +662,7 @@ exports.save_queue_record = function (req, callback) {
 };
 
 /**
- *
+ * Gets queue records
  * @param req
  * @param callback
  */
@@ -723,8 +685,8 @@ exports.get_queue_records = function (req, callback) {
 
             })
             .catch(function (error) {
-                // logger.module().error('ERROR: unable to get metadata ' + error);
-                throw 'ERROR: unable to get queue records ' + error;
+                logger.module().error('ERROR: unable to get queue record ' + error);
+                throw 'ERROR: unable to get queue record ' + error;
             });
 
     } else {
@@ -739,7 +701,7 @@ exports.get_queue_records = function (req, callback) {
 
             })
             .catch(function (error) {
-                // logger.module().error('ERROR: unable to get metadata ' + error);
+                logger.module().error('ERROR: unable to get queue records ' + error);
                 throw 'ERROR: unable to get queue records ' + error;
             });
     }
@@ -751,6 +713,14 @@ exports.get_queue_records = function (req, callback) {
  * @param callback
  */
 exports.get_queue_record = function (req, callback) {
+
+    if (req.query.pid === undefined) {
+        callback({
+            message: 'Bad Request.'
+        });
+
+        return false;
+    }
 
     let pid = req.query.pid;
 
@@ -767,8 +737,8 @@ exports.get_queue_record = function (req, callback) {
 
         })
         .catch(function (error) {
-            // logger.module().error('ERROR: unable to get metadata ' + error);
-            throw 'ERROR: unable to get queue records ' + error;
+            logger.module().error('ERROR: unable to get queue record ' + error);
+            throw 'ERROR: unable to get queue record ' + error;
         });
 };
 
@@ -779,13 +749,23 @@ exports.get_queue_record = function (req, callback) {
  */
 exports.reassign_queue_record = function (req, callback) {
 
+    if (req.body.newID === undefined) {
+
+        callback({
+            status: 400,
+            message: 'Bad Request.'
+        });
+
+        return false;
+    }
+
     knex('mms_users')
         .select('firstName', 'lastName')
         .where({
             userID: req.body.newID
         })
         .then(function (data) {
-            // console.log(data);
+
             let name = data[0].firstName + ' ' + data[0].lastName;
 
             knex('mms_review_queue')
@@ -805,16 +785,18 @@ exports.reassign_queue_record = function (req, callback) {
 
                 })
                 .catch(function (error) {
-                    console.log(error);
+                    logger.module().error('ERROR: unable to reassign queue record ' + error);
+                    throw 'ERROR: unable to save queue record ' + error;
                 });
         })
         .catch(function (error) {
-            console.log(error);
+            logger.module().error('ERROR: unable to get queue record ' + error);
+            throw 'ERROR: unable to get queue record ' + error;
         });
 };
 
 /**
- *
+ * deletes queue record
  * @param req
  * @param callback
  */
@@ -841,17 +823,15 @@ exports.delete_queue_record = function (req, callback) {
             }
         })
         .catch(function (error) {
-            console.log(error);
-            // LOGGER.module().fatal('FATAL: [/repository/model module (create_collection_object/save_record)] unable to save collection record ' + error);
-            // obj.error = 'FATAL: unable to save collection record ' + error;
-            // callback(null, obj);
+            logger.module().error('ERROR: unable to delete queue record ' + error);
+            throw 'ERROR: unable to delete queue record ' + error;
         });
 
     return false;
 };
 
 /**
- *
+ * gets records that are ready to be ingested into coursemedia
  * @param req
  * @param callback
  */
@@ -872,16 +852,27 @@ exports.get_batch_records = function (req, callback) {
             });
         })
         .catch(function (error) {
-            console.log(error);
+            logger.module().error('ERROR: unable to get queue record ' + error);
+            throw 'ERROR: unable to get queue record ' + error;
         });
 };
 
 /**
- *
+ * Gets image from storage
  * @param req
  * @param callback
  */
 exports.get_nas_object = function (req, callback) {
+
+    if (req.query.size === undefined || req.query.object === undefined) {
+
+        callback({
+            status: 400,
+            message: 'Bad Request.'
+        });
+
+        return false;
+    }
 
     let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.object;
 
@@ -910,19 +901,28 @@ exports.get_nas_object = function (req, callback) {
             header: {
                 'Content-Type': 'image/png'
             },
-            // data: '../public/images/object_not_found.png'
             data: path.join(__dirname, '../public/images/object_not_found.png')
         });
     }
 };
 
 /**
- *
+ * checks if file referenced in metadata exists on storage share
  * @param req
  * @param callback
  * @returns {boolean}
  */
 exports.check_object = function (req, callback) {
+
+    if (req.query.size === undefined || req.query.file === undefined) {
+
+        callback({
+            status: 400,
+            message: 'Bad Request.'
+        });
+
+        return false;
+    }
 
     let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.file;
 
@@ -949,17 +949,15 @@ exports.check_object = function (req, callback) {
 };
 
 /**
- *
+ * publishes (ingests) into coursemedia
  * @param req
  * @param callback
  */
 exports.publish_batch_records = function (req, callback) {
 
-    // timestamp   'Y-m-d H:i:s'
-
     if (req.body.pids === undefined) {
 
-        console.log('no records to publish');
+        logger.module().info('no records to publish');
 
         callback({
             status: 200,
@@ -1007,8 +1005,10 @@ exports.publish_batch_records = function (req, callback) {
 
                     if (error) {
 
+                        logger.module().error('ERROR: unable to index metadata record ' + error);
+
                         callback(null, {
-                            message: 'ERROR: unable to index record ' + error
+                            message: 'ERROR: unable to index metadata record ' + error
                         });
 
                         return false;
@@ -1027,15 +1027,16 @@ exports.publish_batch_records = function (req, callback) {
                             console.log(data);
                         })
                         .catch(function (error) {
-                            console.log(error);
+                            logger.module().error('ERROR: unable to get metadata record ' + error);
+                            throw 'ERROR: unable to get metadata record ' + error;
                         });
                 });
 
             })
             .catch(function(error) {
-                console.log(error);
+                logger.module().error('ERROR: unable to get metadata record ' + error);
+                throw 'ERROR: unable to get metadata record ' + error;
             });
 
     }, 5000);
-
 };
