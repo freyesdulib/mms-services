@@ -4,6 +4,7 @@ const config = require('../config/config.js'),
     parseString = require('xml2js').parseString,
     async = require('async'),
     fs = require('fs'),
+    path = require('path'),
     moment = require('moment'),
     identifier = require('../libs/pid_gen'),
     es = require('elasticsearch'),
@@ -873,7 +874,6 @@ exports.get_batch_records = function (req, callback) {
         .catch(function (error) {
             console.log(error);
         });
-
 };
 
 /**
@@ -887,12 +887,20 @@ exports.get_nas_object = function (req, callback) {
 
     if (fs.existsSync(filePath)) {
 
-        callback({
-            status: 200,
-            header: {
-                'Content-Type': 'image/jpg'
-            },
-            data: filePath
+        fs.stat(filePath, function(error, stats) {
+
+            if (error) {
+                console.log(error);
+                return false;
+            }
+
+            callback({
+                status: 200,
+                header: {
+                    'Content-Type': 'image/jpg'
+                },
+                data: filePath
+            });
         });
 
     } else {
@@ -902,11 +910,18 @@ exports.get_nas_object = function (req, callback) {
             header: {
                 'Content-Type': 'image/png'
             },
-            data: '../public/images/object_not_found.png'
+            // data: '../public/images/object_not_found.png'
+            data: path.join(__dirname, '../public/images/object_not_found.png')
         });
     }
 };
 
+/**
+ *
+ * @param req
+ * @param callback
+ * @returns {boolean}
+ */
 exports.check_object = function (req, callback) {
 
     let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.file;

@@ -75,10 +75,9 @@ exports.get_nas_object = function (req, res) {
 
         METADATA.get_nas_object(req, function (data) {
             res.set(data.header);
-            res.sendFile(path.join(__dirname, data.data));
+            res.sendFile(data.data);
         });
     }
-
 };
 
 exports.publish_batch_records = function (req, res) {
