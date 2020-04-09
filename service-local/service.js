@@ -577,7 +577,7 @@ exports.getArtTypes = function (req, callback) {
                 'match_all': {}
             }
         },
-        'sort': ['term']
+        'sort': 'term'
 
     }, function (response) {
         callback(response);
@@ -603,7 +603,7 @@ exports.getTimePeriods = function (req, callback) {
                 'match_all': {}
             }
         },
-        'sort': ['term']
+        'sort': 'term'
 
     }, function (response) {
         callback(response);
@@ -629,8 +629,7 @@ exports.getInstructors = function (req, callback) {
                 'match_all': {}
             }
         },
-        'sort': ['term']
-
+        'sort': 'term'
     }, function (response) {
         callback(response);
     });

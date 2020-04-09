@@ -528,8 +528,8 @@ exports.createIndex = function (req, callback) {
         index: 'mms_vocabs_local_' + index,
         body: {
             'settings': {
-                'number_of_shards': 3,
-                'number_of_replicas': 2
+                'number_of_shards': 1,
+                'number_of_replicas': 1
             }
         }
     }).then(function (result) {
@@ -578,8 +578,8 @@ exports.createMapping = function (req, callback) {
         var mappingObj = {
             'artTypeID': {type: 'integer'},
             'term': {
-                type: 'string',
-                fielddata: true
+                type: 'keyword'
+                // fielddata: true
             }
         };
     }
@@ -614,8 +614,8 @@ exports.createMapping = function (req, callback) {
         var mappingObj = {
             'instructorID': {type: 'integer'},
             'term': {
-                type: 'string',
-                fielddata: true
+                type: 'keyword'
+                // fielddata: true
             }
         };
     }
@@ -631,8 +631,8 @@ exports.createMapping = function (req, callback) {
         var mappingObj = {
             'timeperiodID': {type: 'integer'},
             'term': {
-                type: 'string',
-                fielddata: true
+                type: 'keyword'
+                // fielddata: true
             }
         };
     }
