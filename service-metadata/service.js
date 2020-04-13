@@ -271,6 +271,12 @@ exports.save_metadata = function (req, callback) {
 
     function update_record(obj, callback) {
 
+        obj.isUpdated = 1;
+
+        let json = JSON.parse(obj.json);
+        json['date.modified'] = [moment().format('YYYY-MM-DD hh:mm:ss')];
+        obj.json = JSON.stringify(json);
+
         knex('mms_objects')
             .where({
                 pid: obj.pid
@@ -287,8 +293,6 @@ exports.save_metadata = function (req, callback) {
 
     function index_record(obj, callback) {
 
-        // TODO: check if update=true to index into coursemedia ES
-
         let json = JSON.parse(obj.json);
         let doc = {};
 
@@ -304,6 +308,45 @@ exports.save_metadata = function (req, callback) {
         if (obj.pid === undefined) {
             logger.module().error('ERROR: pid is undefined.  cannot index record.');
             return false;
+        }
+
+        // update course media index if it's an update
+        if (obj.isUpdated !== undefined && obj.isUpdated === 1) {
+
+            cmclient.index({
+                index: config.cmESIndex,
+                type: 'data',
+                id: obj.pid.replace('mms:', ''),
+                body: JSON.parse(obj.json)
+            }, function (error, response) {
+
+                if (error) {
+
+                    logger.module().error('ERROR: unable to index metadata record ' + error);
+
+                    callback(null, {
+                        message: 'ERROR: unable to index metadata record ' + error
+                    });
+
+                    return false;
+                }
+
+                knex('mms_objects')
+                    .where({
+                        pid: obj.pid
+                    })
+                    .update({
+                        isUpdated: 1
+                    })
+                    .then(function (data) {
+                        console.log(data);
+                        // callback(null, obj);
+                    })
+                    .catch(function (error) {
+                        logger.module().error('ERROR: unable to get metadata record ' + error);
+                        throw 'ERROR: unable to get metadata record ' + error;
+                    });
+            });
         }
 
         client.index({
@@ -878,7 +921,7 @@ exports.get_nas_object = function (req, callback) {
 
     if (fs.existsSync(filePath)) {
 
-        fs.stat(filePath, function(error, stats) {
+        fs.stat(filePath, function (error, stats) {
 
             if (error) {
                 console.log(error);
@@ -987,7 +1030,7 @@ exports.publish_batch_records = function (req, callback) {
             .where({
                 pid: pid
             })
-            .then(function(data) {
+            .then(function (data) {
 
                 let json = JSON.parse(data[0].json);
                 let pid = json.pid;
@@ -1033,7 +1076,7 @@ exports.publish_batch_records = function (req, callback) {
                 });
 
             })
-            .catch(function(error) {
+            .catch(function (error) {
                 logger.module().error('ERROR: unable to get metadata record ' + error);
                 throw 'ERROR: unable to get metadata record ' + error;
             });

@@ -1,0 +1,11 @@
+curl -X POST \
+  http://localhost:3004/api/v3/vocabs/index \
+  -H 'Accept: */*' \
+  -H 'Accept-Encoding: gzip, deflate' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Length: 18' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -H 'Host: localhost:3004' \
+  -H 'cache-control: no-cache' \
+  -d data=image_sources

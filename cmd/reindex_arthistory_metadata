@@ -1,0 +1,3 @@
+curl -X POST \
+  http://localhost:3004/api/v3/ah/index \
+  -H 'cache-control: no-cache'
