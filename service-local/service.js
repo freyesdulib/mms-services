@@ -603,7 +603,7 @@ exports.getTimePeriods = function (req, callback) {
                 'match_all': {}
             }
         },
-        'sort': 'term'
+        'sort': 'timeperiodID'
 
     }, function (response) {
         callback(response);
