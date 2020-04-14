@@ -25,10 +25,32 @@ exports.search = function (req, callback) {
 
     let options = req.query.options;
     let q = req.query.keyword.replace('mms:', '');
+    let match = q;
 
     if (options !== 'all') {
-        // TODO: use match query here
-        q = options + '_t:' + q;
+
+        match = {};
+        match[options + '_t'] = q;
+
+        q = {
+            'query': {
+                'bool': {
+                    'must': {
+                        'match': match
+                    }
+                }
+            }
+        };
+
+    } else if (options === 'all') {
+
+        q = {
+            'query': {
+                'match' : {
+                    '_all' : match
+                }
+            }
+        }
     }
 
     client.search({
@@ -36,7 +58,7 @@ exports.search = function (req, callback) {
         size: 500,
         index: 'mms_arthistory',
         type: 'data',
-        q: q
+        body: q
     }).then(function (body) {
 
         callback({

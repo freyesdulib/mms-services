@@ -245,7 +245,7 @@ exports.save_metadata = function (req, callback) {
             })
             .then(function (data) {
                 delete json.instructor;
-                json.instructor = data[0].term;
+                json.instructor = [data[0].term];
                 delete obj.json;
                 obj.json = JSON.stringify(json);
                 callback(null, obj);
