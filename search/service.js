@@ -2,6 +2,7 @@
 
 const config = require('../config/config.js'),
     es = require('elasticsearch'),
+    logger = require('../libs/log4'),
     client = new es.Client({
         host: config.elasticSearch
     });
@@ -67,6 +68,7 @@ exports.search = function (req, callback) {
         });
 
     }, function (error) {
+        logger.module().error('ERROR: unable to get search results ' + error);
         callback(error);
     });
 };

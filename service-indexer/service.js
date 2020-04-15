@@ -35,7 +35,12 @@ var config = require('../config/config.js'),
 exports.indexAh = function (req, callback) {
 
     if (req.body === undefined) {
-        console.log('Bad request');
+
+        callback({
+            status: 400,
+            message: 'Bad Request.'
+        });
+
         return false;
     }
 
@@ -118,18 +123,14 @@ exports.createAhIndex = function (req, callback) {
 
         if (result.acknowledged === true) {
 
-            // setTimeout(function() {
+            create_ah_mapping(function (result) {
+                console.log(result);
+            });
 
-                create_ah_mapping(function(result) {
-                    console.log(result);
-                });
-
-                callback({
-                    status: 201,
-                    message: 'Index created'
-                });
-
-            // }, 2000);
+            callback({
+                status: 201,
+                message: 'Index created'
+            });
 
         } else {
 
@@ -148,7 +149,7 @@ exports.createAhIndex = function (req, callback) {
  * art history mapping
  * @param callback
  */
-function create_ah_mapping (callback) {
+function create_ah_mapping(callback) {
 
     let mappingObj = get_ah_mapping(),
         body = {
@@ -162,13 +163,9 @@ function create_ah_mapping (callback) {
     }).then(function (result) {
 
         if (result.acknowledged === true) {
-            // LOGGER.module().info('INFO: [/indexer/service module (create_repo_index/create_mapping)] mapping created');
-            // obj.mappingCreated = true;
             callback(true);
             return false;
         } else {
-            // LOGGER.module().error('ERROR: [/indexer/service module (create_repo_index/create_mapping)] unable to create mapping');
-            // obj.mappingCreated = false;
             callback(false);
             return false;
         }
@@ -426,8 +423,6 @@ exports.indexVocabs = function (req, callback) {
             logger.module().error('ERROR: async (indexVocabs)');
         }
 
-        // logger.module().info('INFO: index created');
-        // console.log('repoObj: ', results);
     });
 
     callback({
@@ -492,7 +487,7 @@ exports.deleteIndex = function (req, callback) {
 
         } else {
 
-            // TODO: log
+            logger.module().error('ERROR: unable remove record from index. ');
 
             callback({
                 status: 201,
@@ -555,7 +550,7 @@ exports.createIndex = function (req, callback) {
 };
 
 /**
- *
+ * Creates mapping
  * @param req
  * @param callback
  * @returns {boolean}
@@ -579,7 +574,6 @@ exports.createMapping = function (req, callback) {
             'artTypeID': {type: 'integer'},
             'term': {
                 type: 'keyword'
-                // fielddata: true
             }
         };
     }
@@ -668,7 +662,7 @@ exports.createMapping = function (req, callback) {
 };
 
 /**
- * TODO:...
+ * DEPRECATED
  * @param pid
  */
 exports.realTimeIndex = function (pid) {
@@ -705,7 +699,7 @@ exports.realTimeIndex = function (pid) {
 };
 
 /**
- *
+ * DEPRECATED
  * @param req
  * @param callback
  */
@@ -720,11 +714,6 @@ exports.fullIndex = function (req, callback) {
         collection_id = 1;
     }
 
-    /**
-     *
-     * @param id
-     * @param callback
-     */
     function index(id, callback) {
 
         knex('mms_objects').where({
@@ -738,10 +727,6 @@ exports.fullIndex = function (req, callback) {
         });
     }
 
-    /**
-     *
-     * @param id
-     */
     function getRecordsById(id) {
 
         knex('mms_objects').where({
@@ -774,9 +759,6 @@ exports.fullIndex = function (req, callback) {
         });
     }
 
-    /**
-     * @param collection_id
-     */
     index(collection_id, function (data) {
 
         var indexTimer = setInterval(function () {
@@ -794,7 +776,7 @@ exports.fullIndex = function (req, callback) {
 };
 
 /**
- *
+ * DEPRECATED
  * @param id
  */
 exports.getRecordsById = function (id) {
@@ -829,10 +811,10 @@ exports.getRecordsById = function (id) {
     });
 };
 
-/**
+/** DEPRECATED
  *  Returns field mappings
  */
-function get_ah_mapping () {
+function get_ah_mapping() {
 
     return {
         "type_arttype_t": {

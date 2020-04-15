@@ -12,9 +12,6 @@ const config = require('../config/config.js'),
     client = new es.Client({
         host: config.elasticSearch
     }),
-    cmclient = new es.Client({
-        host: config.cmESHost
-    }),
     knex = require('knex')({
         client: 'mysql2',
         connection: {
