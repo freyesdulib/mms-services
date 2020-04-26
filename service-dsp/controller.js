@@ -1,7 +1,13 @@
 'use strict';
 
-const METADATA = require('../service-metadata/service'),
+const METADATA = require('../service-dsp/service'),
     path = require('path');
+
+exports.login = function (req, res) {
+    METADATA.login(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
 
 exports.get_metadata = function (req, res) {
     METADATA.get_metadata(req, function (data) {
@@ -27,6 +33,13 @@ exports.delete_metadata = function (req, res) {
     });
 };
 
+exports.convert = function (req, res) {
+    METADATA.convert(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
+
+/*
 exports.save_queue_record = function (req, res) {
     METADATA.save_queue_record(req, function (data) {
         res.status(data.status).send(data.data);
@@ -85,9 +98,4 @@ exports.publish_batch_records = function (req, res) {
         res.status(data.status).send(data.data);
     });
 };
-
-exports.convert = function (req, res) {
-    METADATA.convert(req, function (data) {
-        res.status(data.status).send(data.data);
-    });
-};
+*/

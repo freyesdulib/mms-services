@@ -14,18 +14,17 @@ module.exports = {
     gettyApiUsername: process.env.GETTY_API_USERNAME,
     gettApiPassword: process.env.GETTY_API_PASSWORD,
     requestOrigin: process.env.REQUEST_ORIGIN,
-    // fedora: process.env.FEDORA,
-    // solr: process.env.SOLR,
     ldap: process.env.LDAP,
     legacyLdap: process.env.LEGACY_AUTH_URL,
-    // solrHost: process.env.SOLR_HOST,
-    // solrPort: process.env.SOLR_PORT,
-    // solrCore: process.env.SOLR_CORE,
     repoHost: process.env.REPO_HOST,
     repoUser: process.env.REPO_USER,
     repoPassword: process.env.REPO_PASSWORD,
     repoName: process.env.REPO_NAME,
     nasPath: process.env.NAS_PATH,
     cmESHost: process.env.CM_ELASTIC_SEARCH_HOST,
-    cmESIndex: process.env.CM_ELASTIC_SEARCH_INDEX
+    cmESIndex: process.env.CM_ELASTIC_SEARCH_INDEX,
+    dspHost: process.env.DSP_HOST,
+    dspUser: process.env.DSP_USER,
+    dspPassword: process.env.DSP_PASSWORD,
+    dspDB: process.env.DSP_DB
 };

@@ -1,101 +1,69 @@
 'use strict';
 
-const config = require('../config/config.js'),
+const CONFIG = require('../config/config.js'),
     parseString = require('xml2js').parseString,
     async = require('async'),
     fs = require('fs'),
     path = require('path'),
     moment = require('moment'),
-    identifier = require('../libs/pid_gen'),
+    VALIDATOR = require('validator'),
+    REQUEST = require('request'),
+    LOGGER = require('../libs/log4'),
     logger = require('../libs/log4'),
+    identifier = require('../libs/pid_gen'),
     es = require('elasticsearch'),
     client = new es.Client({
-        host: config.elasticSearch
+        host: CONFIG.elasticSearch
     }),
     knex = require('knex')({
         client: 'mysql2',
         connection: {
-            host: config.repoHost,
-            user: config.repoUser,
-            password: config.repoPassword,
-            database: config.repoName
-        }
-    }),
-    knexv = require('knex')({
-        client: 'mysql2',
-        connection: {
-            host: config.dbHost,
-            user: config.dbUser,
-            password: config.dbPassword,
-            database: config.dbNameVocab
+            host: CONFIG.dspHost,
+            user: CONFIG.dspUser,
+            password: CONFIG.dspPassword,
+            database: CONFIG.dspDB
         }
     });
-;
 
-/**
- * converts xml to json
- * @param req
- * @param callback
- */
-exports.convert = function (req, callback) {
+exports.authenticate = function (username, password, callback) {
 
-    knex('mms_objects')
-        .select('pid', 'xml')
-        .where({
-            objectType: 'image'
-        })
-        .then(function (data) {
+    if (VALIDATOR.isNumeric(username) === false || password.length === 0) {
 
-            let timer = setInterval(function () {
+        let errorObj = {
+            status: 400,
+            success: false,
+            message: 'Bad request.'
+        };
 
-                if (data.length === 0) {
-                    clearInterval(timer);
-                    return false;
-                }
+        callback(errorObj);
+        return false;
+    }
 
-                let record = data.pop();
+    REQUEST.post({
+            url: CONFIG.ldap, form: {
+                username: username,
+                password: password
+            }
+        },
+        function (error, headers, response) {
 
-                if (record.xml !== '') {
+            if (error) {
 
-                    parseString(record.xml, function (error, result) {
+                LOGGER.module().error('ERROR: [/auth/service module (authenticate)] request to LDAP failed ' + error);
 
-                        if (error) {
-                            logger.module().error('ERROR: unable to get xml metadata ' + error);
-                            return false;
-                        }
+                let errorObj = {
+                    status: 500,
+                    success: false,
+                    message: 'An error has occurred.'
+                };
 
-                        console.log(result.dc);
+                callback(errorObj);
+                return false;
+            }
 
-                        let pid = record.pid;
-                        let json = JSON.stringify(result.dc);
-
-                        knex('mms_objects')
-                            .where({
-                                pid: pid
-                            })
-                            .update({
-                                json: json
-                            })
-                            .then(function (data) {
-                                console.log(data);
-                            })
-                            .catch(function (error) {
-                                logger.module().error('ERROR: unable to update json metadata ' + error);
-                            });
-                    });
-                }
-
-            }, 600);
-        })
-        .catch(function (error) {
-            logger.module().error('ERROR: unable to get xml metadata ' + error);
-            throw 'ERROR: unable to get xml metadata ' + error;
+            let responseObj = JSON.parse(response);
+            callback(responseObj);
         });
-
-    callback({
-        status: 200,
-        data: 'converting...'
-    });
 };
 
 /**
@@ -526,347 +494,69 @@ exports.delete_metadata = function (req, callback) {
 };
 
 /**
- * Saves queue records
- * @param req
- * @param callback
- * @returns {boolean}
- */
-exports.save_queue_record = function (req, callback) {
-
-    // status = 0  incomplete
-    // status = 1  complete -> review queue
-    function get_pid(callback) {
-
-        let obj = {};
-
-        identifier.get_next_pid(function (pid) {
-            obj.pid = 'mms:' + pid;
-            callback(null, obj);
-        });
-    }
-
-    function update_queue(callback) {
-
-        let pid;
-
-        if (req.body.pid !== undefined) {
-            pid = 'mms:' + req.body.pid;
-        } else {
-            obj.update = false;
-        }
-
-        let obj = {};
-        obj.pid = pid;
-        obj.update = true;
-        callback(null, obj);
-    }
-
-    function create_record(obj, callback) {
-
-        if (obj.update !== undefined && obj.update === false) {
-            callback(null, obj);
-        }
-
-        let json = req.body;
-        let doc = {};
-        let status = json.status;
-
-        // delete json.status;
-        delete json.new;
-        delete json.type;
-        delete json.pid;
-
-        obj.userID = req.query.userID;
-        obj.name = req.query.name;
-        obj.title = json.title;
-        obj.status = status;
-
-        for (let prop in json) {
-
-            if (json[prop][0] !== '') {
-                doc[prop] = json[prop];
-            }
-        }
-
-        obj.json = JSON.stringify(doc);
-        callback(null, obj);
-    }
-
-    function get_instructor(obj, callback) {
-
-        let json = JSON.parse(obj.json);
-        let id = json.instructor[0];
-
-        knexv('local_instructors')
-            .where({
-                instructorID: id
-            })
-            .then(function (data) {
-                delete json.instructor;
-                json.instructor = data[0].term;
-                delete obj.json;
-                obj.json = JSON.stringify(json);
-                callback(null, obj);
-            })
-            .catch(function (error) {
-                logger.module().error('ERROR: unable to get instructor term ' + error);
-                throw 'ERROR: unable to get instructor term ' + error;
-            });
-    }
-
-    function save_record(obj, callback) {
-
-        knex('mms_review_queue')
-            .insert(obj)
-            .then(function (data) {
-                callback(null, obj);
-            })
-            .catch(function (error) {
-                logger.module().error('ERROR: unable to save queue record ' + error);
-                throw 'ERROR: unable to save queue record ' + error;
-            });
-    }
-
-    function update_record(obj, callback) {
-
-        if (obj.update !== undefined && obj.update === false) {
-            callback(null, obj);
-        }
-
-        let pid = obj.pid;
-        delete obj.pid;
-        delete obj.update;
-        delete obj.type;
-
-        knex('mms_review_queue')
-            .where({
-                pid: pid
-            })
-            .update(obj)
-            .then(function (data) {
-                callback(null, obj);
-            })
-            .catch(function (error) {
-                logger.module().error('ERROR: unable to update queue record ' + error);
-                throw 'ERROR: unable to update queue record ' + error;
-            });
-    }
-
-    if (req.body.pid !== undefined) {
-
-        async.waterfall([
-            update_queue,
-            create_record,
-            get_instructor,
-            update_record
-        ], function (error, result) {
-
-            if (error) {
-                logger.module().error('ERROR: unable to update queue record ' + error);
-                throw 'ERROR: unable to update queue record ' + error;
-            }
-
-            callback({
-                status: 201,
-                message: 'Record added to queue',
-                data: {
-                    created: true
-                }
-            });
-        });
-
-    } else {
-
-        async.waterfall([
-            get_pid,
-            create_record,
-            get_instructor,
-            save_record
-        ], function (error, result) {
-
-            if (error) {
-                logger.module().error('ERROR: unable to save queue record ' + error);
-                throw 'ERROR: unable to save queue record ' + error;
-            }
-
-            callback({
-                status: 201,
-                message: 'Record added to queue',
-                data: {
-                    created: true
-                }
-            });
-        });
-    }
-};
-
-/**
- * Gets queue records
+ * converts xml to json
  * @param req
  * @param callback
  */
-exports.get_queue_records = function (req, callback) {
+exports.convert = function (req, callback) {
 
-    if (req.query.pid !== undefined) {
-
-        let pid = req.query.pid;
-
-        knex('mms_review_queue')
-            .where({
-                pid: pid
-            })
-            .then(function (data) {
-
-                callback({
-                    status: 200,
-                    data: data
-                });
-
-            })
-            .catch(function (error) {
-                logger.module().error('ERROR: unable to get queue record ' + error);
-                throw 'ERROR: unable to get queue record ' + error;
-            });
-
-    } else {
-
-        knex('mms_review_queue')
-            .then(function (data) {
-
-                callback({
-                    status: 200,
-                    data: data
-                });
-
-            })
-            .catch(function (error) {
-                logger.module().error('ERROR: unable to get queue records ' + error);
-                throw 'ERROR: unable to get queue records ' + error;
-            });
-    }
-};
-
-/**
- * Gets queue record for editing
- * @param req
- * @param callback
- */
-exports.get_queue_record = function (req, callback) {
-
-    if (req.query.pid === undefined) {
-        callback({
-            message: 'Bad Request.'
-        });
-
-        return false;
-    }
-
-    let pid = req.query.pid;
-
-    knex('mms_review_queue')
+    knex('mms_objects')
+        .select('pid', 'xml')
         .where({
-            pid: pid
+            objectType: 'ebook'
         })
         .then(function (data) {
 
-            callback({
-                status: 200,
-                data: data
-            });
+            let timer = setInterval(function () {
 
-        })
-        .catch(function (error) {
-            logger.module().error('ERROR: unable to get queue record ' + error);
-            throw 'ERROR: unable to get queue record ' + error;
-        });
-};
+                if (data.length === 0) {
+                    clearInterval(timer);
+                    return false;
+                }
 
-/**
- * reassigns queue record to different user
- * @param req
- * @param callback
- */
-exports.reassign_queue_record = function (req, callback) {
+                let record = data.pop();
 
-    if (req.body.newID === undefined) {
+                if (record.xml !== '') {
 
-        callback({
-            status: 400,
-            message: 'Bad Request.'
-        });
+                    parseString(record.xml, function (error, result) {
 
-        return false;
-    }
+                        if (error) {
+                            logger.module().error('ERROR: unable to get xml metadata ' + error);
+                            return false;
+                        }
 
-    knex('mms_users')
-        .select('firstName', 'lastName')
-        .where({
-            userID: req.body.newID
-        })
-        .then(function (data) {
+                        console.log(result.dc);
 
-            let name = data[0].firstName + ' ' + data[0].lastName;
+                        let pid = record.pid;
+                        let json = JSON.stringify(result.dc);
 
-            knex('mms_review_queue')
-                .where({
-                    pid: req.body.recordID
-                })
-                .update({
-                    userID: req.body.newID,
-                    name: name
-                })
-                .then(function (data) {
-                    console.log(data);
-
-                    callback({
-                        status: 200
+                        knex('mms_objects')
+                            .where({
+                                pid: pid
+                            })
+                            .update({
+                                json: json
+                            })
+                            .then(function (data) {
+                                console.log(data);
+                            })
+                            .catch(function (error) {
+                                logger.module().error('ERROR: unable to update json metadata ' + error);
+                            });
                     });
+                }
 
-                })
-                .catch(function (error) {
-                    logger.module().error('ERROR: unable to reassign queue record ' + error);
-                    throw 'ERROR: unable to save queue record ' + error;
-                });
+            }, 500);
         })
         .catch(function (error) {
-            logger.module().error('ERROR: unable to get queue record ' + error);
-            throw 'ERROR: unable to get queue record ' + error;
-        });
-};
-
-/**
- * deletes queue record
- * @param req
- * @param callback
- */
-exports.delete_queue_record = function (req, callback) {
-
-    let pid = req.query.pid;
-
-    knex('mms_review_queue')
-        .where({
-            pid: pid
-        })
-        .delete()
-        .then(function (data) {
-
-            if (data === 1) {
-
-                callback({
-                    status: 200,
-                    message: 'Record deleted',
-                    data: {
-                        deleted: true
-                    }
-                });
-            }
-        })
-        .catch(function (error) {
-            logger.module().error('ERROR: unable to delete queue record ' + error);
-            throw 'ERROR: unable to delete queue record ' + error;
+            logger.module().error('ERROR: unable to get xml metadata ' + error);
+            throw 'ERROR: unable to get xml metadata ' + error;
         });
 
-    return false;
+    callback({
+        status: 200,
+        data: 'converting...'
+    });
 };
 
 /**
