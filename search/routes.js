@@ -4,6 +4,6 @@ const CONTROLLER = require('../search/controller');
 
 module.exports = function (app) {
 
-    app.route('/api/v3/search')
+    app.route('/v3/search')
         .get(CONTROLLER.search);
 };

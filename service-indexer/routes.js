@@ -7,27 +7,27 @@ module.exports = function (app) {
     app.route('/api/v3/real-time-index')
         .post(Indexer.realTimeIndex);
 
-    app.route('/api/v3/ah/index')
+    app.route('/v3/ah/index')
         .post(Indexer.indexAh);
 
-    app.route('/api/v3/ah/create')
+    app.route('/v3/ah/create')
         .post(Indexer.createAhIndex);
 
-    app.route('/api/v3/full-index')
+    app.route('/v3/full-index')
         .post(Indexer.fullIndex);
 
-    app.route('/api/v3/vocabs/index')
+    app.route('/v3/vocabs/index')
         .post(Indexer.indexVocabs);
 
-    app.route('/api/v3/vocabs/index/record')
+    app.route('/v3/vocabs/index/record')
         .post(Indexer.indexVocabRecord);
 
-    app.route('/api/v3/vocabs/index/delete')
+    app.route('/v3/vocabs/index/delete')
         .post(Indexer.deleteIndex);
 
-    app.route('/api/v3/vocabs/index/create')
+    app.route('/v3/vocabs/index/create')
         .post(Indexer.createIndex);
 
-    app.route('/api/v3/vocabs/mapping/create')
+    app.route('/v3/vocabs/mapping/create')
         .post(Indexer.createMapping);
 };

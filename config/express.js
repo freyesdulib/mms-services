@@ -39,7 +39,6 @@ module.exports = function () {
     require('../service-auth/routes')(app);
     require('../search/routes')(app);
     require('../service-metadata/routes')(app);
-    require('../service-dsp/routes')(app);
 
     return server;
 };
