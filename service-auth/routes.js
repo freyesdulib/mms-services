@@ -18,11 +18,10 @@
 
 'use strict';
 
-const AUTH = require('../service-auth/controller'),
-    CORS = require('cors');
+const AUTH = require('../service-auth/controller');
 
 module.exports = function (app) {
 
     app.route('/authenticate')
-        .post(CORS(), AUTH.login);
+        .post(AUTH.login);
 };
