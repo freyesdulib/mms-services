@@ -22,6 +22,6 @@ const AUTH = require('../service-auth/controller');
 
 module.exports = function (app) {
 
-    app.route('/authenticate')
+    app.route('/api/authenticate')
         .post(AUTH.login);
 };
