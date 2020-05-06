@@ -91,3 +91,9 @@ exports.convert = function (req, res) {
         res.status(data.status).send(data.data);
     });
 };
+
+exports.check = function (req, res) {
+    METADATA.check(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};

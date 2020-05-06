@@ -88,7 +88,7 @@ exports.convert = function (req, callback) {
                     });
                 }
 
-            }, 600);
+            }, 300);
         })
         .catch(function (error) {
             logger.module().error('ERROR: unable to get xml metadata ' + error);
@@ -98,6 +98,94 @@ exports.convert = function (req, callback) {
     callback({
         status: 200,
         data: 'converting...'
+    });
+};
+
+/**
+ * checks for metadata issues
+ * @param req
+ * @param callback
+ */
+exports.check = function (req, callback) {
+
+    knex('mms_objects')
+        .select('pid', 'json')
+        .where({
+            objectType: 'image'
+        })
+        .then(function (data) {
+
+            let timer = setInterval(function () {
+
+                if (data.length === 0) {
+                    clearInterval(timer);
+                    return false;
+                }
+
+                let record = data.pop();
+                let metadata = JSON.parse(record.json);
+                let art_type;
+                let instructor;
+
+                if (metadata !== null) {
+                    art_type = metadata['type.arttype'];
+                    instructor = metadata.instructor;
+                }
+
+                console.log(data.length);
+                console.log(record.pid);
+
+                if (instructor !== undefined && instructor.toString() === 'Getzelman, Sarah') {
+
+                    console.log('!!!!!!!!!!!');
+                    console.log(instructor);
+
+                    metadata.instructor = ['Magnatta, Sarah'];
+
+                    knex('mms_objects')
+                        .where({
+                            pid: record.pid
+                        })
+                        .update({
+                            json: JSON.stringify(metadata)
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to update json metadata ' + error);
+                        });
+                }
+
+                /*
+                if (art_type === undefined) {
+
+                    let obj = {};
+                    obj.pid = record.pid;
+                    obj.json = JSON.stringify(metadata);
+
+                    knex('mms_broken_metadata')
+                        .insert(obj)
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to save broken metadata record ' + error);
+                            throw 'ERROR: unable to save broken metadata record ' + error;
+                        });
+                }
+                */
+
+            }, 50);
+        })
+        .catch(function (error) {
+            logger.module().error('ERROR: unable to get xml metadata ' + error);
+            throw 'ERROR: unable to get xml metadata ' + error;
+        });
+
+    callback({
+        status: 200,
+        data: 'checking...'
     });
 };
 

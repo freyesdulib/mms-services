@@ -231,6 +231,10 @@ exports.indexVocabRecord = function (req, callback) {
             obj.id = doc.instructorID;
         }
 
+        if (type === 'creators') {
+            obj.id = doc.id;
+        }
+
         client.index(obj, function (error, response) {
 
             if (error) {

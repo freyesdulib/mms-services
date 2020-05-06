@@ -25,4 +25,7 @@ module.exports = function (app) {
 
     app.route('/v3/convert')
         .get(CONTROLLER.convert);
+
+    app.route('/v3/check')
+        .get(CONTROLLER.check);
 };

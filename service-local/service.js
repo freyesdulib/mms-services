@@ -360,9 +360,7 @@ exports.saveLocalCreators = function (req, callback) {
             .insert(obj)
             .then(function (data) {
 
-                var id = data[0];
-
-                obj.id = id;
+                obj.id = data[0];
 
                 request.post({
                     url: config.mmsServices + 'vocabs/index/record',
