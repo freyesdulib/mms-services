@@ -90,7 +90,7 @@ exports.indexAh = function (req, callback) {
                     }
                 });
 
-            }, 550);
+            }, 100);
         })
         .catch(function (error) {
             logger.module().error('ERROR: unable to get record. ' + error);

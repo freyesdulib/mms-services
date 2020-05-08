@@ -67,6 +67,8 @@ exports.convert = function (req, callback) {
                             return false;
                         }
 
+                        result.dc.pid = [record.pid];
+
                         console.log(result.dc);
 
                         let pid = record.pid;
@@ -88,7 +90,7 @@ exports.convert = function (req, callback) {
                     });
                 }
 
-            }, 300);
+            }, 200);
         })
         .catch(function (error) {
             logger.module().error('ERROR: unable to get xml metadata ' + error);
@@ -401,11 +403,18 @@ exports.save_metadata = function (req, callback) {
         // update course media index if it's an update
         if (obj.isUpdated !== undefined && obj.isUpdated === 1) {
 
+            // TODO:
+            let json = JSON.parse(obj.json);
+            let created = json['date.created'].toString();
+            let modified = json['date.modified'].toString();
+            json['date.created'] = [created.replace('.0', '')];
+            json['date.modified'] = [modified.replace('.0', '')];
+
             cmclient.index({
                 index: config.cmESIndex,
                 type: 'data',
                 id: obj.pid.replace('mms:', ''),
-                body: JSON.parse(obj.json)
+                body: json
             }, function (error, response) {
 
                 if (error) {
@@ -429,6 +438,7 @@ exports.save_metadata = function (req, callback) {
                     .then(function (data) {
                         console.log(data);
                         // callback(null, obj);
+                        // return false;
                     })
                     .catch(function (error) {
                         logger.module().error('ERROR: unable to get metadata record ' + error);
@@ -451,7 +461,6 @@ exports.save_metadata = function (req, callback) {
                 callback(null, {
                     message: 'ERROR: unable to index record ' + error
                 });
-
 
                 return false;
             }
