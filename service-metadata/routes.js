@@ -28,4 +28,7 @@ module.exports = function (app) {
 
     app.route('/v3/check')
         .get(CONTROLLER.check);
+
+    app.route('/v3/fix_queue')
+        .get(CONTROLLER.fix_queue);
 };

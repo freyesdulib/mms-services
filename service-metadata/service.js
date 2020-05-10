@@ -103,6 +103,65 @@ exports.convert = function (req, callback) {
     });
 };
 
+exports.fix_queue = function (req, callback) {
+
+    knex('mms_review_queue')
+        .select('pid')
+        .where({
+            json: null
+        })
+        .then(function (data) {
+
+            let timer = setInterval(function () {
+
+                if (data.length === 0) {
+                    clearInterval(timer);
+                    return false;
+                }
+
+                let record = data.pop();
+
+                knex('mms_objects')
+                    .select('json')
+                    .where({
+                        pid: record.pid
+                    })
+                    .then(function (data) {
+
+                        knex('mms_review_queue')
+                            .where({
+                                pid: record.pid
+                            })
+                            .update({
+                                json: data[0].json
+                            })
+                            .then(function (data) {
+                                console.log(data);
+                            })
+                            .catch(function (error) {
+                                logger.module().error('ERROR: unable to update json metadata ' + error);
+                            });
+
+                    })
+                    .catch(function (error) {
+                        logger.module().error('ERROR: unable to get xml metadata ' + error);
+                        throw 'ERROR: unable to get xml metadata ' + error;
+                    });
+
+            }, 50);
+
+        })
+        .catch(function (error) {
+            logger.module().error('ERROR: unable to get xml metadata ' + error);
+            throw 'ERROR: unable to get xml metadata ' + error;
+        });
+
+    callback({
+        status: 200,
+        data: 'Fixing queue'
+    });
+};
+
 /**
  * checks for metadata issues
  * @param req
@@ -160,23 +219,23 @@ exports.check = function (req, callback) {
                 }
 
                 /*
-                if (art_type === undefined) {
+                 if (art_type === undefined) {
 
-                    let obj = {};
-                    obj.pid = record.pid;
-                    obj.json = JSON.stringify(metadata);
+                 let obj = {};
+                 obj.pid = record.pid;
+                 obj.json = JSON.stringify(metadata);
 
-                    knex('mms_broken_metadata')
-                        .insert(obj)
-                        .then(function (data) {
-                            console.log(data);
-                        })
-                        .catch(function (error) {
-                            logger.module().error('ERROR: unable to save broken metadata record ' + error);
-                            throw 'ERROR: unable to save broken metadata record ' + error;
-                        });
-                }
-                */
+                 knex('mms_broken_metadata')
+                 .insert(obj)
+                 .then(function (data) {
+                 console.log(data);
+                 })
+                 .catch(function (error) {
+                 logger.module().error('ERROR: unable to save broken metadata record ' + error);
+                 throw 'ERROR: unable to save broken metadata record ' + error;
+                 });
+                 }
+                 */
 
             }, 50);
         })

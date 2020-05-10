@@ -97,3 +97,9 @@ exports.check = function (req, res) {
         res.status(data.status).send(data.data);
     });
 };
+
+exports.fix_queue = function (req, res) {
+    METADATA.fix_queue(req, function (data) {
+        res.status(data.status).send(data.data);
+    });
+};
