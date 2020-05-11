@@ -23,6 +23,7 @@ module.exports = {
     nasPath: process.env.NAS_PATH,
     cmESHost: process.env.CM_ELASTIC_SEARCH_HOST,
     cmESIndex: process.env.CM_ELASTIC_SEARCH_INDEX,
+    esIndex: process.env.ELASTIC_SEARCH_INDEX,
     dspHost: process.env.DSP_HOST,
     dspUser: process.env.DSP_USER,
     dspPassword: process.env.DSP_PASSWORD,

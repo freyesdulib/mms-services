@@ -25,7 +25,7 @@ var config = require('../config/config.js'),
             database: config.dbNameVocab
         }
     }),
-    INDEX = 'mms_arthistory_dev';
+    INDEX = config.esIndex;
 
 /**
  *

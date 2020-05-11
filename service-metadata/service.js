@@ -33,7 +33,7 @@ const config = require('../config/config.js'),
             database: config.dbNameVocab
         }
     }),
-    INDEX = 'mms_arthistory';
+    INDEX = config.esIndex;
 
 /**
  * converts xml to json
@@ -379,7 +379,9 @@ exports.save_metadata = function (req, callback) {
 
         }
 
+        json.pid = [obj.pid];
         obj.json = JSON.stringify(json);
+
         callback(null, obj);
     }
 

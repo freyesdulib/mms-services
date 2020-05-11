@@ -6,7 +6,7 @@ const config = require('../config/config.js'),
     client = new es.Client({
         host: config.elasticSearch
     }),
-    INDEX = 'mms_arthistory';
+    INDEX = config.esIndex;
 
 /**
  * Performs full text search
