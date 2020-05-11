@@ -349,9 +349,10 @@ exports.save_metadata = function (req, callback) {
 
         if (obj.update !== undefined) {
 
+            // TODO: fix pid processing
             // check if pid array
-            if (typeof json.pid === 'object') {
-                obj.pid = ['mms:' + json.pid.pop().replace('mms:', '')];
+            if (typeof json.pid === 'object' && json.pid.length > 1) {
+                obj.pid = 'mms:' + json.pid.pop().replace('mms:', '');
             } else {
                 obj.pid = 'mms:' + json.pid;
                 json.pid = ['mms:' + json.pid];
