@@ -351,14 +351,16 @@ exports.save_metadata = function (req, callback) {
 
             // check if pid array
             if (typeof json.pid === 'object') {
-                obj.pid = 'mms:' + json.pid.pop().replace('mms:', '');
+                obj.pid = ['mms:' + json.pid.pop().replace('mms:', '')];
             } else {
                 obj.pid = 'mms:' + json.pid;
+                json.pid = ['mms:' + json.pid];
             }
 
             delete obj.update;
             delete json.type;
-            delete json.pid;
+            // delete json.pid;
+
         } else if (obj.pid === undefined) {
             obj.pid = 'mms:' + json.pid;
         } else {
@@ -409,6 +411,10 @@ exports.save_metadata = function (req, callback) {
     }
 
     function save_record(obj, callback) {
+
+        let json = JSON.parse(obj.json);
+        json['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss')];
+        obj.json = JSON.stringify(json);
 
         knex('mms_objects')
             .insert(obj)
@@ -466,13 +472,19 @@ exports.save_metadata = function (req, callback) {
         if (obj.isUpdated !== undefined && obj.isUpdated === 1) {
 
             let json = JSON.parse(obj.json);
-            let created = json['date.created'].toString();
-            let modified = json['date.modified'].toString();
+
+            let created = json['date.created'];
+            let modified = json['date.modified'];
+
+            if (created === undefined || modified === undefined) {
+                created = json['date.created'].toString();
+            } else {
+                created = json['date.created'].toString();
+                modified = json['date.modified'].toString();
+            }
+
             json['date.created'] = [created.replace('.0', '')];
             json['date.modified'] = [modified.replace('.0', '')];
-
-            // TODO: indexing into cm is failing
-            // console.log('cm: ', json);
 
             cmclient.index({
                 index: config.cmESIndex,
@@ -569,7 +581,7 @@ exports.save_metadata = function (req, callback) {
 
         return false;
 
-    } else if (req.body.pid !== undefined && req.body.type === 'queue') {
+    } else if (req.body.pid !== undefined && req.body.type === 'queue') { // TODO: not working
         // create new record from queue
         // re-use pid
         // remove type
