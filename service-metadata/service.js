@@ -476,8 +476,10 @@ exports.save_metadata = function (req, callback) {
             let created = json['date.created'];
             let modified = json['date.modified'];
 
-            if (created === undefined || modified === undefined) {
-                created = json['date.created'].toString();
+            if (created === undefined) {
+                created = [moment().format('YYYY-MM-DD hh:mm:ss')];
+            } else if (modified === undefined) {
+                modified = [moment().format('YYYY-MM-DD hh:mm:ss')];
             } else {
                 created = json['date.created'].toString();
                 modified = json['date.modified'].toString();
