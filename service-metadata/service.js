@@ -32,8 +32,8 @@ const config = require('../config/config.js'),
             password: config.dbPassword,
             database: config.dbNameVocab
         }
-    });
-;
+    }),
+    INDEX = 'mms_arthistory';
 
 /**
  * converts xml to json
@@ -385,6 +385,7 @@ exports.save_metadata = function (req, callback) {
 
     function get_instructor(obj, callback) {
 
+        // TODO: account for instructor field missing
         let json = JSON.parse(obj.json);
         let id = json.instructor[0];
 
@@ -462,12 +463,14 @@ exports.save_metadata = function (req, callback) {
         // update course media index if it's an update
         if (obj.isUpdated !== undefined && obj.isUpdated === 1) {
 
-            // TODO:
             let json = JSON.parse(obj.json);
             let created = json['date.created'].toString();
             let modified = json['date.modified'].toString();
             json['date.created'] = [created.replace('.0', '')];
             json['date.modified'] = [modified.replace('.0', '')];
+
+            // TODO: indexing into cm is failing
+            // console.log('cm: ', json);
 
             cmclient.index({
                 index: config.cmESIndex,
@@ -480,34 +483,37 @@ exports.save_metadata = function (req, callback) {
 
                     logger.module().error('ERROR: unable to index metadata record ' + error);
 
+                    /*
                     callback(null, {
                         message: 'ERROR: unable to index metadata record ' + error
                     });
 
-                    return false;
-                }
+                     */
+                    // return false;
+                } else {
 
-                knex('mms_objects')
-                    .where({
-                        pid: obj.pid
-                    })
-                    .update({
-                        isUpdated: 1
-                    })
-                    .then(function (data) {
-                        console.log(data);
-                        // callback(null, obj);
-                        // return false;
-                    })
-                    .catch(function (error) {
-                        logger.module().error('ERROR: unable to get metadata record ' + error);
-                        throw 'ERROR: unable to get metadata record ' + error;
-                    });
+                    knex('mms_objects')
+                        .where({
+                            pid: obj.pid
+                        })
+                        .update({
+                            isUpdated: 1
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                            // callback(null, obj);
+                            // return false;
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to get metadata record ' + error);
+                            throw 'ERROR: unable to get metadata record ' + error;
+                        });
+                }
             });
         }
 
         client.index({
-            index: 'mms_arthistory',
+            index: INDEX,
             type: 'data',
             id: obj.pid.replace('mms:', ''),
             body: doc
@@ -517,9 +523,11 @@ exports.save_metadata = function (req, callback) {
 
                 logger.module().error('ERROR: unable to index record ' + error);
 
+                /*
                 callback(null, {
                     message: 'ERROR: unable to index record ' + error
                 });
+                */
 
                 return false;
             }
@@ -640,7 +648,7 @@ exports.delete_metadata = function (req, callback) {
             if (data === 1) {
 
                 client.delete({
-                    index: 'mms_arthistory',
+                    index: INDEX,
                     type: 'data',
                     id: pid.replace('mms:', '')
                 }, function (error, response) {

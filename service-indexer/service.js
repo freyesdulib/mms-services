@@ -24,7 +24,8 @@ var config = require('../config/config.js'),
             password: config.dbPassword,
             database: config.dbNameVocab
         }
-    });
+    }),
+    INDEX = 'mms_arthistory_dev';
 
 /**
  *
@@ -79,7 +80,7 @@ exports.indexAh = function (req, callback) {
 
                 client.index({
                     id: record.pid.replace('mms:', ''),
-                    index: 'mms_arthistory',
+                    index: INDEX,
                     type: 'data',
                     body: doc
                 }, function (error, response) {
@@ -112,11 +113,11 @@ exports.indexAh = function (req, callback) {
 exports.createAhIndex = function (req, callback) {
     console.log('creating index...');
     client.indices.create({
-        index: 'mms_arthistory',
+        index: INDEX,
         body: {
             'settings': {
-                'number_of_shards': 3,
-                'number_of_replicas': 2
+                'number_of_shards': 1,
+                'number_of_replicas': 1
             }
         }
     }).then(function (result) {
@@ -157,7 +158,7 @@ function create_ah_mapping(callback) {
         };
 
     client.indices.putMapping({
-        index: 'mms_arthistory',
+        index: INDEX,
         type: 'data',
         body: body
     }).then(function (result) {

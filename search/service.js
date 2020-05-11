@@ -5,7 +5,8 @@ const config = require('../config/config.js'),
     logger = require('../libs/log4'),
     client = new es.Client({
         host: config.elasticSearch
-    });
+    }),
+    INDEX = 'mms_arthistory';
 
 /**
  * Performs full text search
@@ -57,7 +58,7 @@ exports.search = function (req, callback) {
     client.search({
         from: 0,
         size: 500,
-        index: 'mms_arthistory',
+        index: INDEX,
         type: 'data',
         body: q
     }).then(function (body) {
