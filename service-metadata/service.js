@@ -172,7 +172,8 @@ exports.check = function (req, callback) {
     knex('mms_objects')
         .select('pid', 'json')
         .where({
-            objectType: 'image'
+            objectType: 'image',
+            isDeleted: 0
         })
         .then(function (data) {
 
@@ -196,46 +197,56 @@ exports.check = function (req, callback) {
                 console.log(data.length);
                 console.log(record.pid);
 
-                if (instructor !== undefined && instructor.toString() === 'Getzelman, Sarah') {
-
-                    console.log('!!!!!!!!!!!');
-                    console.log(instructor);
-
-                    metadata.instructor = ['Magnatta, Sarah'];
-
-                    knex('mms_objects')
-                        .where({
-                            pid: record.pid
-                        })
-                        .update({
-                            json: JSON.stringify(metadata)
-                        })
-                        .then(function (data) {
-                            console.log(data);
-                        })
-                        .catch(function (error) {
-                            logger.module().error('ERROR: unable to update json metadata ' + error);
-                        });
-                }
-
                 /*
-                 if (art_type === undefined) {
+                 if (instructor !== undefined && instructor.toString() === 'Getzelman, Sarah') {
 
-                 let obj = {};
-                 obj.pid = record.pid;
-                 obj.json = JSON.stringify(metadata);
+                 console.log('!!!!!!!!!!!');
+                 console.log(instructor);
 
-                 knex('mms_broken_metadata')
-                 .insert(obj)
+                 metadata.instructor = ['Magnatta, Sarah'];
+
+                 knex('mms_objects')
+                 .where({
+                 pid: record.pid
+                 })
+                 .update({
+                 json: JSON.stringify(metadata)
+                 })
                  .then(function (data) {
                  console.log(data);
                  })
                  .catch(function (error) {
-                 logger.module().error('ERROR: unable to save broken metadata record ' + error);
-                 throw 'ERROR: unable to save broken metadata record ' + error;
+                 logger.module().error('ERROR: unable to update json metadata ' + error);
                  });
                  }
                  */
+
+                // Art type
+                if (art_type === undefined) {
+                    let trimmed = art_type.toString().replace(/\s+/g, '');
+                    art_type = [trimmed];
+                    console.log(art_type);
+                }
+
+                /*
+                if (art_type === undefined) {
+
+                    let obj = {};
+                    obj.pid = record.pid;
+                    obj.json = JSON.stringify(metadata);
+
+                    knex('mms_broken_metadata')
+                        .insert(obj)
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to save broken metadata record ' + error);
+                            throw 'ERROR: unable to save broken metadata record ' + error;
+                        });
+                }
+                */
+
 
             }, 50);
         })
@@ -336,7 +347,6 @@ exports.save_metadata = function (req, callback) {
                 status: 3 // hides queue record
             })
             .then(function (data) {
-                console.log(data);
                 callback(null, obj);
             })
             .catch(function (error) {
@@ -345,7 +355,6 @@ exports.save_metadata = function (req, callback) {
             });
     }
 
-    // TODO: check if queue record is already in main repo
     function check_if_record_exists(obj, callback) {
 
         knex('mms_objects')
@@ -384,7 +393,7 @@ exports.save_metadata = function (req, callback) {
                 json.pid = ['mms:' + json.pid];
             }
 
-            delete obj.update;
+            // delete obj.update;
             delete json.type;
             // delete json.pid;
 
@@ -425,9 +434,9 @@ exports.save_metadata = function (req, callback) {
                 instructorID: id
             })
             .then(function (data) {
-                delete json.instructor;
+                // delete json.instructor;
                 json.instructor = [data[0].term];
-                delete obj.json;
+                // delete obj.json;
                 obj.json = JSON.stringify(json);
                 callback(null, obj);
             })
@@ -439,7 +448,7 @@ exports.save_metadata = function (req, callback) {
 
     function save_record(obj, callback) {
 
-        if (obj.update !== undefined) {
+        if (obj.update !== undefined && obj.update === true) {
             callback(null, obj);
             return false;
         }
@@ -466,6 +475,7 @@ exports.save_metadata = function (req, callback) {
             return false;
         }
 
+        delete obj.update;
         obj.isUpdated = 1;
 
         let json = JSON.parse(obj.json);
@@ -509,23 +519,23 @@ exports.save_metadata = function (req, callback) {
         if (obj.isUpdated !== undefined && obj.isUpdated === 1) {
 
             /*
-            let json = JSON.parse(obj.json);
+             let json = JSON.parse(obj.json);
 
-            let created = json['date.created'];
-            let modified = json['date.modified'];
+             let created = json['date.created'];
+             let modified = json['date.modified'];
 
-            if (created === undefined) {
-                created = [moment().format('YYYY-MM-DD hh:mm:ss')];
-            } else if (modified === undefined) {
-                modified = [moment().format('YYYY-MM-DD hh:mm:ss')];
-            } else {
-                created = json['date.created'].toString();
-                modified = json['date.modified'].toString();
-            }
+             if (created === undefined) {
+             created = [moment().format('YYYY-MM-DD hh:mm:ss')];
+             } else if (modified === undefined) {
+             modified = [moment().format('YYYY-MM-DD hh:mm:ss')];
+             } else {
+             created = json['date.created'].toString();
+             modified = json['date.modified'].toString();
+             }
 
-            json['date.created'] = [created.replace('.0', '')];
-            json['date.modified'] = [modified.replace('.0', '')];
-            */
+             json['date.created'] = [created.replace('.0', '')];
+             json['date.modified'] = [modified.replace('.0', '')];
+             */
 
             let json = JSON.parse(obj.json);
             let created = json['date.created'];
@@ -556,9 +566,9 @@ exports.save_metadata = function (req, callback) {
                     logger.module().error('ERROR: unable to index metadata record ' + error);
 
                     /*
-                    callback(null, {
-                        message: 'ERROR: unable to index metadata record ' + error
-                    });
+                     callback(null, {
+                     message: 'ERROR: unable to index metadata record ' + error
+                     });
 
                      */
                     // return false;
@@ -596,10 +606,10 @@ exports.save_metadata = function (req, callback) {
                 logger.module().error('ERROR: unable to index record ' + error);
 
                 /*
-                callback(null, {
-                    message: 'ERROR: unable to index record ' + error
-                });
-                */
+                 callback(null, {
+                 message: 'ERROR: unable to index record ' + error
+                 });
+                 */
 
                 return false;
             }
@@ -938,6 +948,7 @@ exports.save_queue_record = function (req, callback) {
                 throw 'ERROR: unable to update queue status ' + error;
             });
     }
+
     //***** moves records out of queue END ******//
 
     // queue updates
