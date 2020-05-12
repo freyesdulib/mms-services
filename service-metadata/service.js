@@ -321,17 +321,19 @@ exports.save_metadata = function (req, callback) {
         callback(null, obj);
     }
 
+    //***** record from queue START *****//
     function new_from_queue(callback) {
 
         let obj = {};
         let pid = 'mms:' + req.body.pid;
+        obj.pid = pid;
 
         knex('mms_review_queue')
             .where({
                 pid: pid
             })
             .update({
-                status: 3 // hides record
+                status: 3 // hides queue record
             })
             .then(function (data) {
                 console.log(data);
@@ -342,6 +344,30 @@ exports.save_metadata = function (req, callback) {
                 throw 'ERROR: unable to update queue status ' + error;
             });
     }
+
+    // TODO: check if queue record is already in main repo
+    function check_if_record_exists(obj, callback) {
+
+        knex('mms_objects')
+            .where({
+                pid: obj.pid
+            })
+            .then(function (data) {
+
+                if (data.length > 0) {
+                    obj.update = true;
+                }
+
+                callback(null, obj);
+
+            })
+            .catch(function (error) {
+                logger.module().error('ERROR: unable to get queue record ' + error);
+                throw 'ERROR: unable to get queue record ' + error;
+            });
+    }
+
+    //***** record from queue END *****//
 
     function create_record(obj, callback) {
 
@@ -413,6 +439,11 @@ exports.save_metadata = function (req, callback) {
 
     function save_record(obj, callback) {
 
+        if (obj.update !== undefined) {
+            callback(null, obj);
+            return false;
+        }
+
         let json = JSON.parse(obj.json);
         json['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss')];
         obj.json = JSON.stringify(json);
@@ -429,6 +460,11 @@ exports.save_metadata = function (req, callback) {
     }
 
     function update_record(obj, callback) {
+
+        if (obj.update === undefined) {
+            callback(null, obj);
+            return false;
+        }
 
         obj.isUpdated = 1;
 
@@ -603,18 +639,19 @@ exports.save_metadata = function (req, callback) {
 
         return false;
 
-    } else if (req.body.pid !== undefined && req.body.type === 'queue') { // TODO: not working
+    } else if (req.body.pid !== undefined && req.body.type === 'queue') {
 
-        console.log('queue!!!');
-        // create new record from queue
+        // create new or update record from queue
         // re-use pid
         // remove type
         delete req.body.type;
         async.waterfall([
             new_from_queue,
+            check_if_record_exists,
             create_record,
             get_instructor,
             save_record,
+            update_record,
             index_record
         ], function (error, result) {
 
@@ -812,9 +849,7 @@ exports.save_queue_record = function (req, callback) {
             })
             .then(function (data) {
 
-                // delete json.instructor;
                 json.instructor = [data[0].term];
-                // delete obj.json;
                 obj.json = JSON.stringify(json);
                 callback(null, obj);
             })
@@ -866,6 +901,8 @@ exports.save_queue_record = function (req, callback) {
             json['date.modified'] = [modified.toString().replace('.0', '')];
         }
 
+        obj.json = JSON.stringify(json);
+
         knex('mms_review_queue')
             .where({
                 pid: pid
@@ -880,7 +917,31 @@ exports.save_queue_record = function (req, callback) {
             });
     }
 
-    if (req.body.pid !== undefined) {
+    //***** moves records out of queue START ******//
+    function change_queue_status(callback) {
+
+        let obj = {};
+        let pid = 'mms:' + req.body.pid;
+        obj.pid = pid;
+        knex('mms_review_queue')
+            .where({
+                pid: pid
+            })
+            .update({
+                status: 1 // hides record from editor and exposes to admin
+            })
+            .then(function (data) {
+                callback(null, obj);
+            })
+            .catch(function (error) {
+                logger.module().error('ERROR: unable to update queue status ' + error);
+                throw 'ERROR: unable to update queue status ' + error;
+            });
+    }
+    //***** moves records out of queue END ******//
+
+    // queue updates
+    if (req.body.pid !== undefined && req.body.status === '0') {
 
         async.waterfall([
             update_queue,
@@ -903,7 +964,7 @@ exports.save_queue_record = function (req, callback) {
             });
         });
 
-    } else {
+    } else if (req.body.pid === undefined && req.body.status === '0') {
 
         async.waterfall([
             get_pid,
@@ -920,6 +981,26 @@ exports.save_queue_record = function (req, callback) {
             callback({
                 status: 201,
                 message: 'Record added to queue',
+                data: {
+                    created: true
+                }
+            });
+        });
+
+    } else if (req.body.pid !== undefined && req.body.status === '1') { // status === 1 (complete)
+
+        async.waterfall([
+            change_queue_status
+        ], function (error, result) {
+
+            if (error) {
+                logger.module().error('ERROR: unable to update queue record ' + error);
+                throw 'ERROR: unable to update queue record ' + error;
+            }
+
+            callback({
+                status: 201,
+                message: 'Record removed from queue',
                 data: {
                     created: true
                 }
