@@ -349,7 +349,7 @@ exports.save_metadata = function (req, callback) {
 
         if (obj.update !== undefined) {
 
-            // TODO: fix pid processing
+            // TODO: fix pid processing and test
             // check if pid array
             if (typeof json.pid === 'object' && json.pid.length > 1) {
                 obj.pid = 'mms:' + json.pid.pop().replace('mms:', '');
@@ -472,6 +472,7 @@ exports.save_metadata = function (req, callback) {
         // update course media index if it's an update
         if (obj.isUpdated !== undefined && obj.isUpdated === 1) {
 
+            /*
             let json = JSON.parse(obj.json);
 
             let created = json['date.created'];
@@ -488,6 +489,24 @@ exports.save_metadata = function (req, callback) {
 
             json['date.created'] = [created.replace('.0', '')];
             json['date.modified'] = [modified.replace('.0', '')];
+            */
+
+            let json = JSON.parse(obj.json);
+            let created = json['date.created'];
+            let modified = json['date.modified'];
+
+            if (created === undefined || modified === undefined) {
+
+                if (created === undefined) {
+                    json['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
+                } else if (modified === undefined) {
+                    json['date.modified'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
+                }
+
+            } else {
+                json['date.created'] = [created.toString().replace('.0', '')];
+                json['date.modified'] = [modified.toString().replace('.0', '')];
+            }
 
             cmclient.index({
                 index: config.cmESIndex,
@@ -585,6 +604,8 @@ exports.save_metadata = function (req, callback) {
         return false;
 
     } else if (req.body.pid !== undefined && req.body.type === 'queue') { // TODO: not working
+
+        console.log('queue!!!');
         // create new record from queue
         // re-use pid
         // remove type
@@ -733,15 +754,16 @@ exports.save_queue_record = function (req, callback) {
 
         let pid;
 
-        if (req.body.pid !== undefined) {
-            pid = 'mms:' + req.body.pid;
-        } else {
-            obj.update = false;
+        if (typeof req.body.pid === 'object' && req.body.pid.length > 0) {
+            pid = 'mms:' + req.body.pid.pop().replace('mms:', '');
+        } else if (req.body.pid !== undefined) {
+            pid = 'mms:' + req.body.pid.replace('mms:', '');
         }
 
         let obj = {};
         obj.pid = pid;
         obj.update = true;
+
         callback(null, obj);
     }
 
@@ -755,7 +777,7 @@ exports.save_queue_record = function (req, callback) {
         let doc = {};
         let status = json.status;
 
-        // delete json.status;
+        delete json.status;
         delete json.new;
         delete json.type;
         delete json.pid;
@@ -772,7 +794,10 @@ exports.save_queue_record = function (req, callback) {
             }
         }
 
+        doc.pid = [obj.pid];
+        doc['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss')];
         obj.json = JSON.stringify(doc);
+
         callback(null, obj);
     }
 
@@ -786,9 +811,10 @@ exports.save_queue_record = function (req, callback) {
                 instructorID: id
             })
             .then(function (data) {
-                delete json.instructor;
-                json.instructor = data[0].term;
-                delete obj.json;
+
+                // delete json.instructor;
+                json.instructor = [data[0].term];
+                // delete obj.json;
                 obj.json = JSON.stringify(json);
                 callback(null, obj);
             })
@@ -821,6 +847,24 @@ exports.save_queue_record = function (req, callback) {
         delete obj.pid;
         delete obj.update;
         delete obj.type;
+
+        let json = JSON.parse(obj.json);
+        let created = json['date.created'];
+        let modified = json['date.modified'];
+
+        if (created === undefined || modified === undefined) {
+
+            if (created === undefined) {
+                json['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
+            } else if (modified === undefined) {
+                json['date.modified'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
+            }
+
+        } else {
+
+            json['date.created'] = [created.toString().replace('.0', '')];
+            json['date.modified'] = [modified.toString().replace('.0', '')];
+        }
 
         knex('mms_review_queue')
             .where({
