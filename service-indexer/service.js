@@ -48,7 +48,8 @@ exports.indexAh = function (req, callback) {
     repo('mms_objects')
         .select('*')
         .where({
-            objectType: 'image'
+            objectType: 'image',
+            isDeleted: 0
         })
         .then(function (data) {
 

@@ -61,16 +61,6 @@ exports.search = function (req, callback) {
                 }
             }
         };
-
-        /*
-        q = {
-            'query': {
-                'match' : {
-                    '_all' : match
-                }
-            }
-        }
-        */
     }
 
     client.search({
@@ -90,5 +80,4 @@ exports.search = function (req, callback) {
         logger.module().error('ERROR: unable to get search results ' + error);
         callback(error);
     });
-
 };

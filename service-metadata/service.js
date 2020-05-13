@@ -188,19 +188,63 @@ exports.check = function (req, callback) {
                 let metadata = JSON.parse(record.json);
                 let art_type;
                 let instructor;
+                let created;
 
                 if (metadata !== null) {
                     art_type = metadata['type.arttype'];
                     instructor = metadata.instructor;
+                    created = metadata['date.created'];
                 }
 
                 console.log(data.length);
                 console.log(record.pid);
 
+                if (metadata === null) {
+                    return false;
+                }
+
+                if (created === undefined || created === null) {
+
+                    metadata['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss')];
+                    console.log(metadata);
+
+                    knex('mms_objects')
+                        .where({
+                            pid: record.pid
+                        })
+                        .update({
+                            json: JSON.stringify(metadata)
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to update json metadata ' + error);
+                        });
+                }
+
                 if (instructor === undefined || instructor === null) {
-                    console.log('missing instructor field!!!!');
+
+                    if (metadata === null) {
+                        return false;
+                    }
+
                     metadata.instructor = ['VMC Collection Development'];
                     console.log(metadata);
+
+                    knex('mms_objects')
+                        .where({
+                            pid: record.pid
+                        })
+                        .update({
+                            json: JSON.stringify(metadata)
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to update json metadata ' + error);
+                        });
                 }
 
                 /*
@@ -807,6 +851,21 @@ exports.save_queue_record = function (req, callback) {
         });
     }
 
+    function new_queue_record(callback) {
+
+        let pid;
+
+        if (typeof req.body.pid === 'object' && req.body.pid.length > 0) {
+            pid = 'mms:' + req.body.pid.pop().replace('mms:', '');
+        } else if (req.body.pid !== undefined) {
+            pid = 'mms:' + req.body.pid.replace('mms:', '');
+        }
+
+        let obj = {};
+        obj.pid = pid;
+        callback(null, obj);
+    }
+
     function update_queue(callback) {
 
         let pid;
@@ -964,6 +1023,73 @@ exports.save_queue_record = function (req, callback) {
     // queue updates
     if (req.body.pid !== undefined && req.body.status === '0') {
 
+        console.log(req.body.pid);
+
+        knex('mms_review_queue')
+            .where({
+                pid: 'mms:' + req.body.pid
+            })
+            .then(function (data) {
+
+                if (data.length === 0) {
+
+                    async.waterfall([
+                        new_queue_record,
+                        create_record,
+                        get_instructor,
+                        save_record
+                    ], function (error, result) {
+
+                        if (error) {
+                            logger.module().error('ERROR: unable to update queue record ' + error);
+                            throw 'ERROR: unable to update queue record ' + error;
+                        }
+
+
+                        callback({
+                            status: 201,
+                            message: 'Record added to queue',
+                            data: {
+                                created: true
+                            }
+                        });
+
+                    });
+
+                } else {
+
+                    async.waterfall([
+                        update_queue,
+                        create_record,
+                        get_instructor,
+                        update_record
+                    ], function (error, result) {
+
+                        if (error) {
+                            logger.module().error('ERROR: unable to update queue record ' + error);
+                            throw 'ERROR: unable to update queue record ' + error;
+                        }
+
+
+                        callback({
+                            status: 201,
+                            message: 'Record added to queue',
+                            data: {
+                                created: true
+                            }
+                        });
+
+                    });
+
+                }
+
+            })
+            .catch(function (error) {
+                logger.module().error('ERROR: unable to get instructor term ' + error);
+                throw 'ERROR: unable to get instructor term ' + error;
+            });
+
+        /*
         async.waterfall([
             update_queue,
             create_record,
@@ -984,6 +1110,7 @@ exports.save_queue_record = function (req, callback) {
                 }
             });
         });
+        */
 
     } else if (req.body.pid === undefined && req.body.status === '0') {
 
