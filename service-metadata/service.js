@@ -1023,8 +1023,6 @@ exports.save_queue_record = function (req, callback) {
     // queue updates
     if (req.body.pid !== undefined && req.body.status === '0') {
 
-        console.log(req.body.pid);
-
         knex('mms_review_queue')
             .where({
                 pid: 'mms:' + req.body.pid
