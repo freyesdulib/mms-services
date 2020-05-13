@@ -197,6 +197,12 @@ exports.check = function (req, callback) {
                 console.log(data.length);
                 console.log(record.pid);
 
+                if (instructor === undefined || instructor === null) {
+                    console.log('missing instructor field!!!!');
+                    metadata.instructor = ['VMC Collection Development'];
+                    console.log(metadata);
+                }
+
                 /*
                  if (instructor !== undefined && instructor.toString() === 'Getzelman, Sarah') {
 
@@ -222,11 +228,13 @@ exports.check = function (req, callback) {
                  */
 
                 // Art type
+                /*
                 if (art_type === undefined) {
                     let trimmed = art_type.toString().replace(/\s+/g, '');
                     art_type = [trimmed];
                     console.log(art_type);
                 }
+                */
 
                 /*
                 if (art_type === undefined) {
@@ -248,7 +256,7 @@ exports.check = function (req, callback) {
                 */
 
 
-            }, 50);
+            }, 25);
         })
         .catch(function (error) {
             logger.module().error('ERROR: unable to get xml metadata ' + error);
@@ -650,6 +658,8 @@ exports.save_metadata = function (req, callback) {
         return false;
 
     } else if (req.body.pid !== undefined && req.body.type === 'queue') {
+
+        console.log('queue...');
 
         // create new or update record from queue
         // re-use pid

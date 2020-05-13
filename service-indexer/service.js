@@ -116,8 +116,8 @@ exports.createAhIndex = function (req, callback) {
         index: INDEX,
         body: {
             'settings': {
-                'number_of_shards': 1,
-                'number_of_replicas': 1
+                'number_of_shards': 3,
+                'number_of_replicas': 2
             }
         }
     }).then(function (result) {

@@ -46,6 +46,23 @@ exports.search = function (req, callback) {
 
     } else if (options === 'all') {
 
+        match = {};
+        match['_all'] = q;
+
+        q = {
+            'query': {
+                'bool': {
+                    'must': {
+                        'match': match
+                    },
+                    'should': {
+                        'match_phrase': match
+                    }
+                }
+            }
+        };
+
+        /*
         q = {
             'query': {
                 'match' : {
@@ -53,6 +70,7 @@ exports.search = function (req, callback) {
                 }
             }
         }
+        */
     }
 
     client.search({
@@ -72,4 +90,5 @@ exports.search = function (req, callback) {
         logger.module().error('ERROR: unable to get search results ' + error);
         callback(error);
     });
+
 };

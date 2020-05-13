@@ -1,5 +1,5 @@
 curl -X POST \
-  http://localhost/v3/vocabs/index \
+  http://localhost/api/v3/vocabs/index \
   -H 'Accept: */*' \
   -H 'Accept-Encoding: gzip, deflate' \
   -H 'Cache-Control: no-cache' \
