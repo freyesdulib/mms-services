@@ -1186,6 +1186,7 @@ exports.get_queue_records = function (req, callback) {
     } else {
 
         knex('mms_review_queue')
+            .orderBy('timestamp')
             .then(function (data) {
 
                 callback({
