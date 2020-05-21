@@ -1008,14 +1008,14 @@ exports.save_queue_record = function (req, callback) {
     }
 
     //***** moves records out of queue START ******//
-    function change_queue_status(callback) {
+    function change_queue_status(obj, callback) {
 
-        let obj = {};
-        let pid = 'mms:' + req.body.pid;
-        obj.pid = pid;
+        // let obj = {};
+        // let pid = 'mms:' + req.body.pid;
+        // obj.pid = pid;
         knex('mms_review_queue')
             .where({
-                pid: pid
+                pid: 'mms:' + obj.pid
             })
             .update({
                 status: 1 // hides record from editor and exposes to admin
@@ -1147,7 +1147,11 @@ exports.save_queue_record = function (req, callback) {
     } else if (req.body.pid !== undefined && req.body.status === '1') { // status === 1 (complete)
 
         async.waterfall([
-            change_queue_status
+            update_queue,
+            create_record,
+            get_instructor,
+            update_record
+            // change_queue_status
         ], function (error, result) {
 
             if (error) {
@@ -1486,7 +1490,6 @@ exports.publish_batch_records = function (req, callback) {
         }
 
         let pid = pids.pop();
-        console.log(pid);
 
         knex('mms_objects')
             .select('json')
