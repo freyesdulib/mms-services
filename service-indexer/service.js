@@ -45,12 +45,18 @@ exports.indexAh = function (req, callback) {
         return false;
     }
 
+    let params = {};
+
+    if (req.query.pid !== undefined) {
+        params.pid = req.query.pid;
+    }
+
+    params.objectType = 'image';
+    params.isDeleted = 0;
+
     repo('mms_objects')
         .select('*')
-        .where({
-            objectType: 'image',
-            isDeleted: 0
-        })
+        .where(params)
         .then(function (data) {
 
             var timer = setInterval(function () {
@@ -66,18 +72,15 @@ exports.indexAh = function (req, callback) {
                 let doc = {};
                 let json = JSON.parse(record.json);
 
-
                 for (let prop in json) {
 
                     if (json[prop][0] !== '') {
                         let es_prop = prop.replace('.', '_');
                         doc[es_prop + '_t'] = json[prop];
-                    } else {
-                        return false;
-                    }
+                    } // else {
+                        // return false;
+                    // }
                 }
-
-                console.log(record.pid);
 
                 client.index({
                     id: record.pid.replace('mms:', ''),

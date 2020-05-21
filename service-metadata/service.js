@@ -479,7 +479,13 @@ exports.save_metadata = function (req, callback) {
 
         // TODO: account for instructor field missing
         let json = JSON.parse(obj.json);
-        let id = json.instructor[0];
+        let id;
+
+        if (json.instructor === undefined) {
+            id = json.instructor = 95;  // VMC Collection Development
+        } else {
+            id = json.instructor[0];
+        }
 
         knexv('local_instructors')
             .where({
@@ -920,7 +926,12 @@ exports.save_queue_record = function (req, callback) {
     function get_instructor(obj, callback) {
 
         let json = JSON.parse(obj.json);
-        let id = json.instructor[0];
+        let id;
+        if (json.instructor === undefined) {
+            id = json.instructor[0] = 95;  // VMC Collection Development
+        } else {
+            id = json.instructor[0];
+        }
 
         knexv('local_instructors')
             .where({
