@@ -928,7 +928,7 @@ exports.save_queue_record = function (req, callback) {
         let json = JSON.parse(obj.json);
         let id;
         if (json.instructor === undefined) {
-            id = json.instructor[0] = 95;  // VMC Collection Development
+            id = json.instructor = 95;  // VMC Collection Development
         } else {
             id = json.instructor[0];
         }
