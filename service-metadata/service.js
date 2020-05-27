@@ -612,6 +612,8 @@ exports.save_metadata = function (req, callback) {
                 json['date.modified'] = [modified.toString().replace('.0', '')];
             }
 
+            delete json.type;
+
             cmclient.index({
                 index: config.cmESIndex,
                 type: 'data',
@@ -629,7 +631,7 @@ exports.save_metadata = function (req, callback) {
                      });
 
                      */
-                    // return false;
+                    return false;
                 } else {
 
                     knex('mms_objects')
