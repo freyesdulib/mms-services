@@ -1512,6 +1512,7 @@ exports.publish_batch_records = function (req, callback) {
                 let pid = json.pid;
                 json.id = pid;
                 delete json.pid;
+                delete json.type;
 
                 cmclient.index({
                     index: config.cmESIndex,
@@ -1549,5 +1550,5 @@ exports.publish_batch_records = function (req, callback) {
                 throw 'ERROR: unable to get metadata record ' + error;
             });
 
-    }, 5000);
+    }, 4000);
 };
