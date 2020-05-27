@@ -1374,8 +1374,6 @@ exports.get_batch_records = function (req, callback) {
  */
 exports.get_nas_object = function (req, callback) {
 
-    // console.log(req.query);
-
     if (req.query.size === undefined || req.query.object === undefined) {
 
         callback({
@@ -1490,7 +1488,14 @@ exports.publish_batch_records = function (req, callback) {
 
         if (pids.length === 0) {
             clearInterval(timer);
-            console.log('done');
+
+            callback({
+                status: 200,
+                data: {
+                    success: true
+                }
+            });
+
             return false;
         }
 
@@ -1511,20 +1516,12 @@ exports.publish_batch_records = function (req, callback) {
                 cmclient.index({
                     index: config.cmESIndex,
                     type: 'data',
-                    id: pid.replace('mms:', ''),
+                    id: pid.toString().replace('mms:', ''),
                     body: json
                 }, function (error, response) {
 
-                    console.log(response);
-
                     if (error) {
-
                         logger.module().error('ERROR: unable to index metadata record ' + error);
-
-                        callback(null, {
-                            message: 'ERROR: unable to index metadata record ' + error
-                        });
-
                         return false;
                     }
 
