@@ -1374,6 +1374,8 @@ exports.get_batch_records = function (req, callback) {
  */
 exports.get_nas_object = function (req, callback) {
 
+    // console.log(req.query);
+
     if (req.query.size === undefined || req.query.object === undefined) {
 
         callback({
@@ -1385,6 +1387,8 @@ exports.get_nas_object = function (req, callback) {
     }
 
     let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.object;
+
+    // let filePath = config.nasPath + 'arthistory/image/small/' + req.query.object;
 
     if (fs.existsSync(filePath)) {
 
@@ -1424,7 +1428,7 @@ exports.get_nas_object = function (req, callback) {
  */
 exports.check_object = function (req, callback) {
 
-    if (req.query.size === undefined || req.query.file === undefined) {
+    if (req.query.file === undefined) { // req.query.size === undefined ||
 
         callback({
             status: 400,
@@ -1434,7 +1438,8 @@ exports.check_object = function (req, callback) {
         return false;
     }
 
-    let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.file;
+    // let filePath = config.nasPath + 'arthistory/image/' + req.query.size + '/' + req.query.file;
+    let filePath = config.nasPath + 'arthistory/image/small/' + req.query.file;
 
     if (fs.existsSync(filePath)) {
 
