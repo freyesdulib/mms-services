@@ -576,25 +576,6 @@ exports.save_metadata = function (req, callback) {
         // update course media index if it's an update
         if (obj.isUpdated !== undefined && obj.isUpdated === 1) {
 
-            /*
-             let json = JSON.parse(obj.json);
-
-             let created = json['date.created'];
-             let modified = json['date.modified'];
-
-             if (created === undefined) {
-             created = [moment().format('YYYY-MM-DD hh:mm:ss')];
-             } else if (modified === undefined) {
-             modified = [moment().format('YYYY-MM-DD hh:mm:ss')];
-             } else {
-             created = json['date.created'].toString();
-             modified = json['date.modified'].toString();
-             }
-
-             json['date.created'] = [created.replace('.0', '')];
-             json['date.modified'] = [modified.replace('.0', '')];
-             */
-
             let json = JSON.parse(obj.json);
             let created = json['date.created'];
             let modified = json['date.modified'];

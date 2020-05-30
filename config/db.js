@@ -8,8 +8,8 @@ var config = require('../config/config'),
             database : config.dbNameVocab
         },
         pool: {
-            min: 1,
-            max: 5
+            min: 2,
+            max: 10
         }
     });
 
