@@ -31,4 +31,7 @@ module.exports = function (app) {
 
     app.route('/v3/fix_queue')
         .get(CONTROLLER.fix_queue);
+
+    app.route('/v3/batch/update/cm')
+        .get(CONTROLLER.batch_update_cm);
 };

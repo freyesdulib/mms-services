@@ -1,11 +1,11 @@
 const config = require('../config/config'),
-    db = require('knex')({
+    vdb = require('knex')({
         client: 'mysql',
         connection: {
-            host: config.repoHost,
-            user: config.repoUser,
-            password: config.repoPassword,
-            database: config.repoName
+            host: config.dbHost,
+            user: config.dbUser,
+            password: config.dbPassword,
+            database: config.dbNameVocab
         },
         pool: {
             min: 2,
@@ -14,5 +14,5 @@ const config = require('../config/config'),
     });
 
 module.exports = function () {
-    return db;
+    return vdb;
 };

@@ -15,25 +15,151 @@ const config = require('../config/config.js'),
     cmclient = new es.Client({
         host: config.cmESHost
     }),
-    knex = require('knex')({
-        client: 'mysql2',
-        connection: {
-            host: config.repoHost,
-            user: config.repoUser,
-            password: config.repoPassword,
-            database: config.repoName
-        }
-    }),
-    knexv = require('knex')({
-        client: 'mysql2',
-        connection: {
-            host: config.dbHost,
-            user: config.dbUser,
-            password: config.dbPassword,
-            database: config.dbNameVocab
-        }
-    }),
+    knex = require('../config/db')(),
+    knexv = require('../config/vdb')(),
     INDEX = config.esIndex;
+
+//---------------------START-UTILS---------------------------//
+
+/**
+ * Batch updates coursemedia records with mms changes
+ * @param req
+ * @param callback
+ */
+exports.batch_update_cm = function (req, callback) {
+
+    function get_objects(callback) {
+
+        knex('mms_objects')
+            .select('pid', 'json')
+            .where({
+                objectType: 'image',
+                isDeleted: 0
+            })
+            .then(function (data) {
+
+                let pids = [];
+                let timer = setInterval(function () {
+
+                    let record = data.pop();
+                    let json = JSON.parse(record.json);
+
+                    if (data.length === 0) {
+                        clearInterval(timer);
+                        let obj = {};
+                        obj.records = pids;
+                        callback(null, obj);
+                        return false;
+                    }
+
+                    console.log(record.pid);
+
+                    if (json === null) {
+                        // let tmp = JSON.parse(record.json);
+                        // json.instructor = ['VMC Collection Development'];
+                        return false;
+                    }
+
+                    //-----CONDITION------//
+                    if (json.instructor == null) {
+                        return false;
+                    }
+
+                    if (json.instructor == undefined) {
+                        return false;
+                    }
+
+                    if (json.instructor.toString() === 'Magnatta, Sarah') {
+                        console.log(json.instructor);
+                        pids.push(record);
+                    }
+                    //-----CONDITION------//
+
+                }, 1);
+            })
+            .catch(function (error) {
+                logger.module().error('ERROR: unable to get xml metadata ' + error);
+                throw 'ERROR: unable to get xml metadata ' + error;
+            });
+    }
+
+    function reindex_objects(obj, callback) {
+
+        console.log(obj.records.length);
+
+        let timer = setInterval(function () {
+
+            let record = obj.records.pop();
+            let json = JSON.parse(record.json);
+
+            if (obj.records.length === 0) {
+                clearInterval(timer);
+                console.log('done.');
+                callback(null, obj);
+                return false;
+            }
+
+            delete json.type;
+
+            let created = json['date.created'];
+            let modified = json['date.modified'];
+
+            if (created === undefined || modified === undefined) {
+
+                if (created === undefined) {
+                    json['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
+                } else if (modified === undefined) {
+                    json['date.modified'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
+                }
+
+            } else {
+                json['date.created'] = [created.toString().replace('.0', '')];
+                json['date.modified'] = [modified.toString().replace('.0', '')];
+            }
+
+            console.log(json);
+
+            cmclient.index({
+                index: config.cmESIndex,
+                type: 'data',
+                id: obj.pid.replace('mms:', ''),
+                body: json
+            }, function (error, response) {
+
+                if (error) {
+                    logger.module().error('ERROR: unable to index metadata record ' + error);
+                    return false;
+                }
+
+                console.log(response);
+            });
+
+        }, 5000);
+
+        return false;
+    }
+
+    async.waterfall([
+        get_objects,
+        reindex_objects
+    ], function (results) {
+        console.log(results);
+    });
+
+    callback({
+        status: 200,
+        data: 'updating cm...'
+    });
+};
+
+/**
+ * Batch updates mms metadata
+ * @param req
+ * @param callback
+ */
+exports.batch_update_metadata = function (req, callback) {
+
+};
 
 /**
  * converts xml to json
@@ -169,6 +295,8 @@ exports.fix_queue = function (req, callback) {
  */
 exports.check = function (req, callback) {
 
+    // TODO: check from multiple art types
+
     knex('mms_objects')
         .select('pid', 'json')
         .where({
@@ -273,31 +401,31 @@ exports.check = function (req, callback) {
 
                 // Art type
                 /*
-                if (art_type === undefined) {
-                    let trimmed = art_type.toString().replace(/\s+/g, '');
-                    art_type = [trimmed];
-                    console.log(art_type);
-                }
-                */
+                 if (art_type === undefined) {
+                 let trimmed = art_type.toString().replace(/\s+/g, '');
+                 art_type = [trimmed];
+                 console.log(art_type);
+                 }
+                 */
 
                 /*
-                if (art_type === undefined) {
+                 if (art_type === undefined) {
 
-                    let obj = {};
-                    obj.pid = record.pid;
-                    obj.json = JSON.stringify(metadata);
+                 let obj = {};
+                 obj.pid = record.pid;
+                 obj.json = JSON.stringify(metadata);
 
-                    knex('mms_broken_metadata')
-                        .insert(obj)
-                        .then(function (data) {
-                            console.log(data);
-                        })
-                        .catch(function (error) {
-                            logger.module().error('ERROR: unable to save broken metadata record ' + error);
-                            throw 'ERROR: unable to save broken metadata record ' + error;
-                        });
-                }
-                */
+                 knex('mms_broken_metadata')
+                 .insert(obj)
+                 .then(function (data) {
+                 console.log(data);
+                 })
+                 .catch(function (error) {
+                 logger.module().error('ERROR: unable to save broken metadata record ' + error);
+                 throw 'ERROR: unable to save broken metadata record ' + error;
+                 });
+                 }
+                 */
 
 
             }, 25);
@@ -312,6 +440,8 @@ exports.check = function (req, callback) {
         data: 'checking...'
     });
 };
+
+//---------------------END-UTILS---------------------------//
 
 /**
  * gets metadata
@@ -1082,27 +1212,27 @@ exports.save_queue_record = function (req, callback) {
             });
 
         /*
-        async.waterfall([
-            update_queue,
-            create_record,
-            get_instructor,
-            update_record
-        ], function (error, result) {
+         async.waterfall([
+         update_queue,
+         create_record,
+         get_instructor,
+         update_record
+         ], function (error, result) {
 
-            if (error) {
-                logger.module().error('ERROR: unable to update queue record ' + error);
-                throw 'ERROR: unable to update queue record ' + error;
-            }
+         if (error) {
+         logger.module().error('ERROR: unable to update queue record ' + error);
+         throw 'ERROR: unable to update queue record ' + error;
+         }
 
-            callback({
-                status: 201,
-                message: 'Record added to queue',
-                data: {
-                    created: true
-                }
-            });
-        });
-        */
+         callback({
+         status: 201,
+         message: 'Record added to queue',
+         data: {
+         created: true
+         }
+         });
+         });
+         */
 
     } else if (req.body.pid === undefined && req.body.status === '0') {
 
