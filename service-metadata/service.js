@@ -118,11 +118,12 @@ exports.batch_update_cm = function (req, callback) {
             }
 
             console.log(json);
+            let pid = json.pid.toString().replace('mms:', '');
 
             cmclient.index({
                 index: config.cmESIndex,
                 type: 'data',
-                id: obj.pid.replace('mms:', ''),
+                id: pid,
                 body: json
             }, function (error, response) {
 
