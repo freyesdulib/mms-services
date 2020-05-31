@@ -1,0 +1,8 @@
+curl -X GET \
+  http://localhost:3004/v3/batch/update/cm \
+  -H 'Accept: */*' \
+  -H 'Accept-Encoding: gzip, deflate' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Connection: keep-alive' \
+  -H 'Host: localhost:3004' \
+  -H 'cache-control: no-cache'
