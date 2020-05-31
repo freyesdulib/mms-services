@@ -85,8 +85,6 @@ exports.batch_update_cm = function (req, callback) {
 
     function reindex_objects(obj, callback) {
 
-        console.log(obj.records.length);
-
         let timer = setInterval(function () {
 
             let record = obj.records.pop();
@@ -103,7 +101,9 @@ exports.batch_update_cm = function (req, callback) {
 
             let created = json['date.created'];
             let modified = json['date.modified'];
+            json['date.created'] = [created.toString().replace('.0', '')];
 
+            /*
             if (created === undefined || modified === undefined) {
 
                 if (created === undefined) {
@@ -113,11 +113,15 @@ exports.batch_update_cm = function (req, callback) {
                 }
 
             } else {
+                console.log('else');
                 json['date.created'] = [created.toString().replace('.0', '')];
                 json['date.modified'] = [modified.toString().replace('.0', '')];
             }
+            */
 
+            console.log(json['date.created']);
             console.log(json);
+
             let pid = json.pid.toString().replace('mms:', '');
 
             cmclient.index({
