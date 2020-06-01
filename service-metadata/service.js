@@ -33,6 +33,7 @@ exports.batch_update_cm = function (req, callback) {
         knex('mms_objects')
             .select('pid', 'json')
             .where({
+                pid: 'mms:93359',
                 objectType: 'image',
                 isDeleted: 0
             })
@@ -41,9 +42,6 @@ exports.batch_update_cm = function (req, callback) {
                 let pids = [];
                 let timer = setInterval(function () {
 
-                    let record = data.pop();
-                    let json = JSON.parse(record.json);
-
                     if (data.length === 0) {
                         clearInterval(timer);
                         let obj = {};
@@ -51,6 +49,9 @@ exports.batch_update_cm = function (req, callback) {
                         callback(null, obj);
                         return false;
                     }
+
+                    let record = data.pop();
+                    let json = JSON.parse(record.json);
 
                     console.log(record.pid);
 
@@ -119,7 +120,6 @@ exports.batch_update_cm = function (req, callback) {
             }
             */
 
-            console.log(json['date.created']);
             console.log(json);
 
             let pid = json.pid.toString().replace('mms:', '');
