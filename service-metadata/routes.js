@@ -34,4 +34,7 @@ module.exports = function (app) {
 
     app.route('/v3/batch/update/cm')
         .get(CONTROLLER.batch_update_cm);
+
+    app.route('/v3/batch/update/metadata')
+        .get(CONTROLLER.batch_update_metadata);
 };

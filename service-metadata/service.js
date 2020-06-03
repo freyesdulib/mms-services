@@ -91,6 +91,8 @@ exports.batch_update_cm = function (req, callback) {
             let record = obj.records.pop();
             let json = JSON.parse(record.json);
 
+            console.log(json);
+
             if (obj.records.length === 0) {
                 clearInterval(timer);
                 console.log('done.');
@@ -104,26 +106,10 @@ exports.batch_update_cm = function (req, callback) {
             let modified = json['date.modified'];
             json['date.created'] = [created.toString().replace('.0', '')];
 
-            /*
-            if (created === undefined || modified === undefined) {
-
-                if (created === undefined) {
-                    json['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
-                } else if (modified === undefined) {
-                    json['date.modified'] = [moment().format('YYYY-MM-DD hh:mm:ss').replace('.0', '')];
-                }
-
-            } else {
-                console.log('else');
-                json['date.created'] = [created.toString().replace('.0', '')];
-                json['date.modified'] = [modified.toString().replace('.0', '')];
-            }
-            */
-
             console.log(json);
 
             let pid = json.pid.toString().replace('mms:', '');
-
+            console.log('reindex');
             cmclient.index({
                 index: config.cmESIndex,
                 type: 'data',
@@ -163,6 +149,186 @@ exports.batch_update_cm = function (req, callback) {
  * @param callback
  */
 exports.batch_update_metadata = function (req, callback) {
+
+    knex('mms_objects')
+        .select('pid', 'json')
+        .where({
+            objectType: 'image',
+            isDeleted: 0
+        })
+        .orderBy('objectID', 'desc')
+        .then(function (data) {
+
+            let count = [];
+
+            let timer = setInterval(function () {
+
+                if (data.length === 0) {
+                    clearInterval(timer);
+                    console.log(count.length);
+                    return false;
+                }
+
+                let record = data.pop();
+                let metadata = JSON.parse(record.json);
+                let art_type;
+                let instructor;
+                let created;
+                let style_period; // coverage.temporal.styleperiod;
+
+                if (metadata !== null) {
+                    // art_type = metadata['type.arttype'];
+                    // instructor = metadata.instructor;
+                    // created = metadata['date.created'];
+                    // console.log(metadata);
+                    style_period = metadata['coverage.temporal.styleperiod'];
+                }
+
+                if (metadata === null) {
+                    return false;
+                }
+
+                if (style_period === undefined || style_period === null) {
+                    return false;
+                }
+
+                console.log(record.pid);
+
+                let index = metadata['coverage.temporal.styleperiod'].indexOf('Die Brucke');
+
+                if (index > -1) {
+                    metadata['coverage.temporal.styleperiod'].splice(index, 1);
+                    metadata['coverage.temporal.styleperiod'].push('Die Brucke (artists group)');
+                    console.log(metadata);
+                    count.push('Die Brucke (artists group)');
+
+                    knex('mms_objects')
+                        .where({
+                            pid: record.pid
+                        })
+                        .update({
+                            json: JSON.stringify(metadata)
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to update json metadata ' + error);
+                        });
+                }
+
+                /*
+                 if (created === undefined || created === null) {
+
+                 metadata['date.created'] = [moment().format('YYYY-MM-DD hh:mm:ss')];
+                 console.log(metadata);
+
+                 knex('mms_objects')
+                 .where({
+                 pid: record.pid
+                 })
+                 .update({
+                 json: JSON.stringify(metadata)
+                 })
+                 .then(function (data) {
+                 console.log(data);
+                 })
+                 .catch(function (error) {
+                 logger.module().error('ERROR: unable to update json metadata ' + error);
+                 });
+                 }
+                 */
+
+                /*
+                 if (instructor === undefined || instructor === null) {
+
+                 if (metadata === null) {
+                 return false;
+                 }
+
+                 metadata.instructor = ['VMC Collection Development'];
+                 console.log(metadata);
+
+                 knex('mms_objects')
+                 .where({
+                 pid: record.pid
+                 })
+                 .update({
+                 json: JSON.stringify(metadata)
+                 })
+                 .then(function (data) {
+                 console.log(data);
+                 })
+                 .catch(function (error) {
+                 logger.module().error('ERROR: unable to update json metadata ' + error);
+                 });
+                 }
+                 */
+
+                /*
+                 if (instructor !== undefined && instructor.toString() === 'Getzelman, Sarah') {
+
+                 console.log('!!!!!!!!!!!');
+                 console.log(instructor);
+
+                 metadata.instructor = ['Magnatta, Sarah'];
+
+                 knex('mms_objects')
+                 .where({
+                 pid: record.pid
+                 })
+                 .update({
+                 json: JSON.stringify(metadata)
+                 })
+                 .then(function (data) {
+                 console.log(data);
+                 })
+                 .catch(function (error) {
+                 logger.module().error('ERROR: unable to update json metadata ' + error);
+                 });
+                 }
+                 */
+
+                // Art type
+                /*
+                 if (art_type === undefined) {
+                 let trimmed = art_type.toString().replace(/\s+/g, '');
+                 art_type = [trimmed];
+                 console.log(art_type);
+                 }
+                 */
+
+                /*
+                 if (art_type === undefined) {
+
+                 let obj = {};
+                 obj.pid = record.pid;
+                 obj.json = JSON.stringify(metadata);
+
+                 knex('mms_broken_metadata')
+                 .insert(obj)
+                 .then(function (data) {
+                 console.log(data);
+                 })
+                 .catch(function (error) {
+                 logger.module().error('ERROR: unable to save broken metadata record ' + error);
+                 throw 'ERROR: unable to save broken metadata record ' + error;
+                 });
+                 }
+                 */
+
+
+            }, 25);
+        })
+        .catch(function (error) {
+            logger.module().error('ERROR: unable to get metadata ' + error);
+            throw 'ERROR: unable to get metadata ' + error;
+        });
+
+    callback({
+        status: 200,
+        data: 'checking...'
+    });
 
 };
 
