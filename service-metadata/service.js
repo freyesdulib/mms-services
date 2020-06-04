@@ -175,6 +175,7 @@ exports.batch_update_metadata = function (req, callback) {
                 let instructor;
                 let created;
                 let style_period; // coverage.temporal.styleperiod;
+                let source;
 
                 // TODO: detect double art types
                 // TODO: detect double descriptions
@@ -183,20 +184,41 @@ exports.batch_update_metadata = function (req, callback) {
                     // art_type = metadata['type.arttype'];
                     // instructor = metadata.instructor;
                     // created = metadata['date.created'];
-                    // console.log(metadata);
-                    style_period = metadata['coverage.temporal.styleperiod'];
+                    // style_period = metadata['coverage.temporal.styleperiod'];
+
                 }
 
                 if (metadata === null) {
                     return false;
                 }
 
+                console.log(record.pid);
+
+                if (metadata['source'] === undefined || metadata['source'] === null) {
+                    console.log('missing source');
+                    metadata['source'] = ['undocumented'];
+                    count.push('undocumented');
+                    console.log(metadata);
+                    knex('mms_objects')
+                        .where({
+                            pid: record.pid
+                        })
+                        .update({
+                            json: JSON.stringify(metadata)
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to update json metadata ' + error);
+                        });
+                }
+
                 if (style_period === undefined || style_period === null) {
                     return false;
                 }
 
-                console.log(record.pid);
-
+                /*
                 let index = metadata['coverage.temporal.styleperiod'].indexOf('Die Brucke');
 
                 if (index > -1) {
@@ -219,6 +241,7 @@ exports.batch_update_metadata = function (req, callback) {
                             logger.module().error('ERROR: unable to update json metadata ' + error);
                         });
                 }
+                */
 
                 /*
                  if (created === undefined || created === null) {
