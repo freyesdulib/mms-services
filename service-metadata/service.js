@@ -176,6 +176,9 @@ exports.batch_update_metadata = function (req, callback) {
                 let created;
                 let style_period; // coverage.temporal.styleperiod;
 
+                // TODO: detect double art types
+                // TODO: detect double descriptions
+
                 if (metadata !== null) {
                     // art_type = metadata['type.arttype'];
                     // instructor = metadata.instructor;
@@ -327,7 +330,7 @@ exports.batch_update_metadata = function (req, callback) {
 
     callback({
         status: 200,
-        data: 'checking...'
+        data: 'updating...'
     });
 
 };
