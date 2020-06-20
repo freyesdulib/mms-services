@@ -154,7 +154,8 @@ exports.batch_update_metadata = function (req, callback) {
         .select('pid', 'json')
         .where({
             objectType: 'image',
-            isDeleted: 0
+            isDeleted: 0,
+            isCataloged: 1
         })
         .orderBy('objectID', 'desc')
         .then(function (data) {
@@ -177,15 +178,62 @@ exports.batch_update_metadata = function (req, callback) {
                 let style_period; // coverage.temporal.styleperiod;
                 let source;
 
-                // TODO: detect double art types
+                // TODO: detect double art types --
                 // TODO: detect double descriptions
-
                 if (metadata !== null) {
                     // art_type = metadata['type.arttype'];
+                    let description; // = metadata['description'];
                     // instructor = metadata.instructor;
                     // created = metadata['date.created'];
                     // style_period = metadata['coverage.temporal.styleperiod'];
 
+                    // console.log(art_type.length);
+                    if (art_type !== undefined && art_type.length > 1) {
+                        console.log(metadata);
+                        let obj = {};
+                        obj.pid = metadata['pid'].toString();
+                        obj.art_types = art_type.toString();
+                        obj.title = metadata['title'].toString();
+                        knex('mms_arttypes_report')
+                            .insert(obj)
+                            .then(function (data) {
+                                console.log(data);
+                            })
+                            .catch(function (error) {
+                                logger.module().error('ERROR: unable to save metadata record ' + error);
+                                throw 'ERROR: unable to save metadata record ' + error;
+                            });
+                    }
+
+                    if (description !== undefined && description.length > 1) {
+
+                        if (description.length > 4) {
+                            console.log('//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//');
+                            return false;
+                        }
+
+                        // console.log(metadata);
+
+                        let obj = {};
+                        obj.pid = metadata['pid'].toString();
+                        obj.description_1 = description[0];
+                        obj.description_2 = description[1];
+
+                        if (description.length > 2) {
+                            obj.description_3 = description[2];
+                        }
+
+                        obj.title = metadata['title'].toString();
+                        knex('mms_descriptions_report')
+                            .insert(obj)
+                            .then(function (data) {
+                                console.log(data);
+                            })
+                            .catch(function (error) {
+                                logger.module().error('ERROR: unable to save metadata record ' + error);
+                                throw 'ERROR: unable to save metadata record ' + error;
+                            });
+                    }
                 }
 
                 if (metadata === null) {
@@ -194,11 +242,15 @@ exports.batch_update_metadata = function (req, callback) {
 
                 console.log(record.pid);
 
-                if (metadata['source'] === undefined || metadata['source'] === null) {
-                    console.log('missing source');
-                    metadata['source'] = ['undocumented'];
-                    count.push('undocumented');
+                if (metadata['source'] !== undefined && metadata['source'].toString() === 'slide') {
+
+                    console.log('slide value');
                     console.log(metadata);
+
+                    metadata['source'] = ['undocumented'];
+
+                    count.push('undocumented');
+
                     knex('mms_objects')
                         .where({
                             pid: record.pid
@@ -212,6 +264,8 @@ exports.batch_update_metadata = function (req, callback) {
                         .catch(function (error) {
                             logger.module().error('ERROR: unable to update json metadata ' + error);
                         });
+
+
                 }
 
                 if (style_period === undefined || style_period === null) {
@@ -219,29 +273,29 @@ exports.batch_update_metadata = function (req, callback) {
                 }
 
                 /*
-                let index = metadata['coverage.temporal.styleperiod'].indexOf('Die Brucke');
+                 let index = metadata['coverage.temporal.styleperiod'].indexOf('Die Brucke');
 
-                if (index > -1) {
-                    metadata['coverage.temporal.styleperiod'].splice(index, 1);
-                    metadata['coverage.temporal.styleperiod'].push('Die Brucke (artists group)');
-                    console.log(metadata);
-                    count.push('Die Brucke (artists group)');
+                 if (index > -1) {
+                 metadata['coverage.temporal.styleperiod'].splice(index, 1);
+                 metadata['coverage.temporal.styleperiod'].push('Die Brucke (artists group)');
+                 console.log(metadata);
+                 count.push('Die Brucke (artists group)');
 
-                    knex('mms_objects')
-                        .where({
-                            pid: record.pid
-                        })
-                        .update({
-                            json: JSON.stringify(metadata)
-                        })
-                        .then(function (data) {
-                            console.log(data);
-                        })
-                        .catch(function (error) {
-                            logger.module().error('ERROR: unable to update json metadata ' + error);
-                        });
-                }
-                */
+                 knex('mms_objects')
+                 .where({
+                 pid: record.pid
+                 })
+                 .update({
+                 json: JSON.stringify(metadata)
+                 })
+                 .then(function (data) {
+                 console.log(data);
+                 })
+                 .catch(function (error) {
+                 logger.module().error('ERROR: unable to update json metadata ' + error);
+                 });
+                 }
+                 */
 
                 /*
                  if (created === undefined || created === null) {
@@ -324,24 +378,28 @@ exports.batch_update_metadata = function (req, callback) {
                  }
                  */
 
-                /*
-                 if (art_type === undefined) {
 
-                 let obj = {};
-                 obj.pid = record.pid;
-                 obj.json = JSON.stringify(metadata);
+                if (art_type === undefined) {
 
-                 knex('mms_broken_metadata')
-                 .insert(obj)
-                 .then(function (data) {
-                 console.log(data);
-                 })
-                 .catch(function (error) {
-                 logger.module().error('ERROR: unable to save broken metadata record ' + error);
-                 throw 'ERROR: unable to save broken metadata record ' + error;
-                 });
-                 }
-                 */
+                    let obj = {};
+                    obj.pid = record.pid;
+                    obj.json = JSON.stringify(metadata);
+
+                    // console.log(obj.json['type.arttype'].length);
+
+
+                    /*
+                    knex('mms_broken_metadata')
+                        .insert(obj)
+                        .then(function (data) {
+                            console.log(data);
+                        })
+                        .catch(function (error) {
+                            logger.module().error('ERROR: unable to save broken metadata record ' + error);
+                            throw 'ERROR: unable to save broken metadata record ' + error;
+                        });
+                        */
+                }
 
 
             }, 25);
