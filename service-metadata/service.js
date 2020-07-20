@@ -17,6 +17,7 @@ const config = require('../config/config.js'),
     }),
     knex = require('../config/db')(),
     knexv = require('../config/vdb')(),
+    request = require('request'),
     INDEX = config.esIndex;
 
 //---------------------START-UTILS---------------------------//
@@ -157,7 +158,7 @@ exports.batch_update_metadata = function (req, callback) {
             isDeleted: 0,
             isCataloged: 1
         })
-        .orderBy('objectID', 'desc')
+        .orderBy('objectID', 'asc')
         .then(function (data) {
 
             let count = [];
@@ -180,14 +181,253 @@ exports.batch_update_metadata = function (req, callback) {
 
                 // TODO: detect double art types --
                 // TODO: detect double descriptions
+                // TODO: look for & and ()
+                // TODO: confirm that records are bound to image files
                 if (metadata !== null) {
                     // art_type = metadata['type.arttype'];
-                    let description; // = metadata['description'];
+                    // let description; // = metadata['description'];
                     // instructor = metadata.instructor;
                     // created = metadata['date.created'];
                     // style_period = metadata['coverage.temporal.styleperiod'];
+                    // let identifier = metadata['identifier'];
 
-                    // console.log(art_type.length);
+                    console.log(metadata.identifier);
+
+                    if (metadata.identifier !== undefined && metadata['pid'] !== undefined) {
+
+                        let obj = {};
+                        obj.pid = metadata['pid'].toString();
+                        obj.identifier = metadata.identifier.toString();
+                        obj.title = metadata['title'].toString();
+                        obj.small = 'no';
+                        obj.medium = 'no';
+                        obj.large = 'no';
+
+                        knex('mms_identifiers_image_report')
+                            .insert(obj)
+                            .then(function (data) {
+                                console.log(data);
+                            })
+                            .catch(function (error) {
+                                logger.module().error('ERROR: unable to save metadata record ' + error);
+                                throw 'ERROR: unable to save metadata record ' + error;
+                            });
+
+                        request.head({
+                            url: 'https://lib-mms01-vlp.du.edu/api/v3/nas?size=small&object=' +  metadata.identifier.toString(),
+                            timeout: 45000
+                        }, function (error, httpResponse, body) {
+
+                            if (error) {
+                                console.log(error);
+                                console.log(httpResponse.statusCode);
+                            }
+
+                            if (httpResponse.statusCode === 200) {
+
+                                console.log(httpResponse.statusCode);
+
+                                let file_size = 0;
+
+                                if (httpResponse.headers['content-type'] === 'image/png') {
+                                    file_size = 0;
+                                } else {
+                                    file_size = httpResponse.headers['content-length'];
+                                }
+
+                                if (httpResponse.headers['content-type'] === 'image/jpg') {
+
+                                    knex('mms_identifiers_image_report')
+                                        .where({
+                                            pid: metadata['pid'].toString()
+                                        })
+                                        .update({
+                                            small: 'yes',
+                                            file_size_s:  file_size
+
+                                        })
+                                        .then(function (data) {
+                                            console.log(data);
+                                        })
+                                        .catch(function (error) {
+                                            console.log(error);
+                                        });
+                                }
+
+                                return false;
+
+                            } else if (httpResponse.statusCode === 404) {
+                                console.log(httpResponse.headers);
+                                console.log(httpResponse.statusCode);
+                                return false;
+                            } else {
+                                console.log(httpResponse.headers);
+                                console.log(httpResponse.statusCode);
+                                return false;
+                            }
+                        });
+
+                        request.head({
+                            url: 'https://lib-mms01-vlp.du.edu/api/v3/nas?size=medium&object=' +  metadata.identifier.toString(),
+                            timeout: 45000
+                        }, function (error, httpResponse, body) {
+
+                            if (error) {
+                                // LOGGER.module().error('ERROR: Unable to get header information ' + error);
+                                console.log(error);
+                                console.log(httpResponse.statusCode);
+                            }
+
+                            if (httpResponse.statusCode === 200) {
+
+                                // console.log(httpResponse.headers);
+                                // console.log(httpResponse.statusCode);
+
+                                let file_size = 0;
+
+                                if (httpResponse.headers['content-type'] === 'image/png') {
+                                    file_size = 0;
+                                } else {
+                                    file_size = httpResponse.headers['content-length'];
+                                }
+
+                                if (httpResponse.headers['content-type'] === 'image/jpg') {
+
+                                    knex('mms_identifiers_image_report')
+                                        .where({
+                                            pid: metadata['pid'].toString()
+                                        })
+                                        .update({
+                                            medium: 'yes',
+                                            file_size_m: file_size
+                                        })
+                                        .then(function (data) {
+                                            console.log(data);
+                                        })
+                                        .catch(function (error) {
+                                            console.log(error);
+                                        });
+                                }
+
+                                return false;
+
+                            } else if (httpResponse.statusCode === 404) {
+                                console.log(httpResponse.headers);
+                                console.log(httpResponse.statusCode);
+                                return false;
+                            } else {
+                                console.log(httpResponse.headers);
+                                console.log(httpResponse.statusCode);
+                                return false;
+                            }
+                        });
+
+                        request.head({
+                            url: 'https://lib-mms01-vlp.du.edu/api/v3/nas?size=large&object=' +  metadata.identifier.toString(),
+                            timeout: 45000
+                        }, function (error, httpResponse, body) {
+
+                            if (error) {
+                                console.log(error);
+                                console.log(httpResponse.statusCode);
+                            }
+
+                            if (httpResponse.statusCode === 200) {
+
+                                let file_size = 0;
+
+                                if (httpResponse.headers['content-type'] === 'image/png') {
+                                    file_size = 0;
+                                } else {
+                                    file_size = httpResponse.headers['content-length'];
+                                }
+
+                                if (httpResponse.headers['content-type'] === 'image/jpg') {
+
+                                    knex('mms_identifiers_image_report')
+                                        .where({
+                                            pid: metadata['pid'].toString()
+                                        })
+                                        .update({
+                                            large: 'yes',
+                                            file_size_l: file_size
+                                        })
+                                        .then(function (data) {
+                                            console.log(data);
+                                        })
+                                        .catch(function (error) {
+                                            console.log(error);
+                                        });
+                                }
+
+                                // let resp = {};
+                                // resp.headers = httpResponse.headers;
+                                // resp.file = data.file;
+                                // TODO: update record here
+                                return false;
+
+                            } else if (httpResponse.statusCode === 404) {
+                                console.log(httpResponse.headers);
+                                console.log(httpResponse.statusCode);
+                                return false;
+                            } else {
+                                console.log(httpResponse.headers);
+                                console.log(httpResponse.statusCode);
+                                return false;
+                            }
+                        });
+                    }
+
+                    /*
+                    if (metadata.identifier !== undefined && metadata.identifier.toString().indexOf(' ') >= 0) {
+                        console.log('whitespace detected!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                        console.log(metadata);
+                        let obj = {};
+                        obj.pid = metadata['pid'].toString();
+                        obj.identifier = metadata.identifier.toString();
+                        obj.title = metadata['title'].toString();
+                        knex('mms_identifiers_report')
+                            .insert(obj)
+                            .then(function (data) {
+                                console.log(data);
+                            })
+                            .catch(function (error) {
+                                logger.module().error('ERROR: unable to save metadata record ' + error);
+                                throw 'ERROR: unable to save metadata record ' + error;
+                            });
+                    }
+                    */
+
+
+                    /*
+                    if (metadata.identifier !== undefined && metadata.identifier.toString().indexOf(')') >= 0) {
+                        console.log('& !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                        console.log(metadata);
+                        let obj = {};
+                        obj.pid = metadata['pid'].toString();
+                        obj.identifier = metadata.identifier.toString();
+                        obj.title = metadata['title'].toString();
+                        knex('mms_identifiers_report')
+                            .insert(obj)
+                            .then(function (data) {
+                                console.log(data);
+                            })
+                            .catch(function (error) {
+                                logger.module().error('ERROR: unable to save metadata record ' + error);
+                                throw 'ERROR: unable to save metadata record ' + error;
+                            });
+                    }
+                    */
+
+                    /*
+                    if (metadata['identifier.master'] !== undefined && metadata['identifier.master'].indexOf(' ') >= 0) {
+                        console.log('whitespace detected!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                        console.log(metadata['identifier.master']);
+                    }
+                    */
+                    // /\s/g.test(s);
+
+                    /*
                     if (art_type !== undefined && art_type.length > 1) {
                         console.log(metadata);
                         let obj = {};
@@ -204,7 +444,9 @@ exports.batch_update_metadata = function (req, callback) {
                                 throw 'ERROR: unable to save metadata record ' + error;
                             });
                     }
+                    */
 
+                    /*
                     if (description !== undefined && description.length > 1) {
 
                         if (description.length > 4) {
@@ -234,7 +476,9 @@ exports.batch_update_metadata = function (req, callback) {
                                 throw 'ERROR: unable to save metadata record ' + error;
                             });
                     }
+                     */
                 }
+
 
                 if (metadata === null) {
                     return false;
@@ -401,8 +645,7 @@ exports.batch_update_metadata = function (req, callback) {
                         */
                 }
 
-
-            }, 25);
+            }, 1000);
         })
         .catch(function (error) {
             logger.module().error('ERROR: unable to get metadata ' + error);
@@ -683,7 +926,7 @@ exports.check = function (req, callback) {
                  */
 
 
-            }, 25);
+            }, 500);
         })
         .catch(function (error) {
             logger.module().error('ERROR: unable to get xml metadata ' + error);
