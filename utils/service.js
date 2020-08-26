@@ -18,7 +18,6 @@ const config = require('../config/config.js'),
     knex = require('../config/db')(),
     knexv = require('../config/vdb')(),
     request = require('request'),
-    parser = require('xml2json'),
     INDEX = config.esIndex;
 
 //---------------------START-UTILS---------------------------//
@@ -146,116 +145,24 @@ exports.batch_update_cm = function (req, callback) {
 };
 
 /**
- * Batch updates metadata
+ *
  * @param req
  * @param callback
  */
 exports.batch_update_metadata = function(req, callback) {
 
-    // get updates
     knex('mms_updates')
         .select('*')
-        .then(function (updates) {
+        .then(function (data) {
+            console.log(data);
 
-            let timer = setInterval(function() {
-
-                if (updates.length === 0) {
-                    clearInterval(timer);
-                    return false;
-                }
-
-                let record_updates = updates.pop();
-
-                knex('mms_objects')
-                    .select('*')
-                    .where({
-                        pid: record_updates.pid
-                    })
-                    .then(function (records) {
-
-                        let old_record = JSON.parse(records[0].json);
-
-                        // request to getty here
-                        let url = 'http://vocabsservices.getty.edu/ULANService.asmx/ULANGetSubject?subjectID=' + record_updates.creator;
-
-                        request(url, function (error, response, xml) {
-
-                            if (error) {
-                                console.error('error:', error);
-                                return false;
-                            }
-
-                            if (response.statusCode === 200) {
-
-                                old_record['type.arttype'] = [record_updates.art_types];
-                                old_record.title = [record_updates.title];
-
-                                let title_alternative = []
-                                title_alternative.push(record_updates.alternative_title_1);
-                                title_alternative.push(record_updates.alternative_title_2);
-                                title_alternative.push(record_updates.alternative_title_3);
-                                old_record['title.alternative'] = title_alternative;
-
-                                let json = parser.toJson(xml);
-                                let creator_record = JSON.parse(json);
-                                old_record.creator = [creator_record.Vocabulary.Subject.Terms.Preferred_Term.Term_Text];
-
-                                let style_period = [];
-                                style_period.push(record_updates.style_period_1);
-                                style_period.push(record_updates.style_period_2);
-                                old_record['coverage.temporal.styleperiod'] = style_period;
-                                old_record.description = [record_updates.description];
-                                old_record['coverage.spatial.location'] = record_updates.location;
-                                old_record['coverage.spatial.repository'] = record_updates.repository;
-                                console.log(old_record);
-
-                                let obj = {};
-                                obj.json = JSON.stringify(old_record);
-
-                                // TODO: update query here
-                                knex('mms_objects')
-                                    .where({
-                                        pid: record_updates.pid
-                                    })
-                                    .update(obj)
-                                    .then(function (data) {
-
-                                        console.log(data);
-
-                                        client.index({
-                                            index: INDEX,
-                                            type: 'data',
-                                            id: record_updates.pid.replace('mms:', ''),
-                                            body: old_record
-                                        }, function (error, response) {
-
-                                            if (error) {
-                                                logger.module().error('ERROR: unable to index record ' + error);
-                                                return false;
-                                            }
-
-                                            console.log(response);
-                                        });
-
-                                    })
-                                    .catch(function (error) {
-                                        // logger.module().error('ERROR: unable to update queue record ' + error);
-                                        throw 'ERROR: unable to update metadata record ' + error;
-                                    });
-                            }
-                        });
-
-                    })
-                    .catch(function(data) {
-                        console.log(data);
-                    });
-
-            }, 4000);
+            // TODO: construct field arrays here
 
         })
         .catch(function(data) {
-            console.log(data);
+           console.log(data);
         });
+
 };
 
 /**
