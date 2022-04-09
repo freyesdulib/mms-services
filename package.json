@@ -19,7 +19,7 @@
     "knex": "^0.19.5",
     "log4js": "^4.5.1",
     "method-override": "^3.0.0",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "mysql": "^2.18.1",
     "mysql2": "^1.7.0",
     "request": "^2.88.2",
